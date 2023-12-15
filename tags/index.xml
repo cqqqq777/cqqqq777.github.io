@@ -12,7 +12,34 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2023 Cqqqq777 Blog.</copyright>
-    <lastBuildDate>Sat, 09 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cqqqq777.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 15 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cqqqq777.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>cloud native</title>
+      <link>https://cqqqq777.github.io/tags/cloud-native/</link>
+      <pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://cqqqq777.github.io/tags/cloud-native/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>golang</title>
+      <link>https://cqqqq777.github.io/tags/golang/</link>
+      <pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://cqqqq777.github.io/tags/golang/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>k8s</title>
+      <link>https://cqqqq777.github.io/tags/k8s/</link>
+      <pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://cqqqq777.github.io/tags/k8s/</guid>
+      <description></description>
+    </item>
+    
     <item>
       <title>algorithm</title>
       <link>https://cqqqq777.github.io/tags/algorithm/</link>

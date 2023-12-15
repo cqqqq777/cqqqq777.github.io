@@ -12,7 +12,16 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2023 Cqqqq777 Blog.</copyright>
-    <lastBuildDate>Sat, 09 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cqqqq777.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 15 Dec 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cqqqq777.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>k8s</title>
+      <link>https://cqqqq777.github.io/posts/k8s/</link>
+      <pubDate>Fri, 15 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://cqqqq777.github.io/posts/k8s/</guid>
+      <description>总结了一些有关 k8s 的知识</description>
+    </item>
+    
     <item>
       <title>Hash</title>
       <link>https://cqqqq777.github.io/posts/hash/</link>

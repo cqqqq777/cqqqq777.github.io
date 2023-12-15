@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>k8s | Home</title>
+<meta name="keywords" content="k8s, golang, cloud native">
+<meta name="description" content="总结了一些有关 k8s 的知识">
+<meta name="author" content="Cqqqq777">
+<link rel="canonical" href="https://cqqqq777.github.io/posts/k8s/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1b82bbed8b13f853704558d527b681efaea938ce91e6ae8903e8b19e73b1b0f8.css" integrity="sha256-G4K77YsT&#43;FNwRVjVJ7aB766pOM6R5q6JA&#43;ixnnOxsPg=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://cqqqq777.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://cqqqq777.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://cqqqq777.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://cqqqq777.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://cqqqq777.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="k8s" />
+<meta property="og:description" content="总结了一些有关 k8s 的知识" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://cqqqq777.github.io/posts/k8s/" /><meta property="og:image" content="https://cqqqq777.github.io/papermod-cover.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-12-15T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-12-15T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://cqqqq777.github.io/papermod-cover.png"/>
+
+<meta name="twitter:title" content="k8s"/>
+<meta name="twitter:description" content="总结了一些有关 k8s 的知识"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://cqqqq777.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "k8s",
+      "item": "https://cqqqq777.github.io/posts/k8s/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "k8s",
+  "name": "k8s",
+  "description": "总结了一些有关 k8s 的知识",
+  "keywords": [
+    "k8s", "golang", "cloud native"
+  ],
+  "articleBody": "架构 集群中的节点分为两种：control plane 和 node\nControl Plane 负责管理和控制集群的整体行为，通常包含以下组件：\nkube-apiserver：负责对外提供 RESTful API，可水平扩容 kube-controller-manager：负责运行控制器，通常包括以下控制器： 节点控制器（Node Controller）：负责监控和管理集群中的节点（Node）。它的主要功能是确保集群中的节点正常运行，并处理节点故障和恢复。 任务控制器（Job Controller）：监测代表一次性任务的 Job 对象，然后创建 Pods 来运行这些任务直至完成 端点分片控制器（EndpointSlice controller）：填充端点分片（EndpointSlice）对象（以提供 Service 和 Pod 之间的链接） 服务账号控制器（ServiceAccount controller）：为新的命名空间创建默认的服务账号（ServiceAccount） … cloud-controller-manager：允许你将你的集群连接到云提供商的 API 之上， 并将与该云平台交互的组件同与你的集群交互的组件分离开来。只有在服务上云的时候才会用到。包括以下控制器： 节点控制器：在云上监控和管理集群中的节点。 路由控制器：负责适当地配置云平台中的路由，以便 Kubernetes 集群中不同节点上的容器之间可以相互通信。 服务控制器：确保服务的正常运行以及与其他组件的协调。 kube-scheduler： 负责监视新创建的、未指定运行 node 的 Pods， 并选择 node 来让 Pod 在上面运行。 etcd：存储集群元信息 Node 实际运行 Pod，通常包含以下组件：\nkubelet：负责维护容器的生命周期，同时也负责 Volume（CVI）和网络（CNI）的管理 kube-proxy：负责为 Service 提供 cluster 内部的服务发现和负载均衡 cri：负责镜像管理以及 Pod 和容器的真正运行 附加组件 Kube-dns：为集群提供 DNS 服务 ingress-controller：为集群提供外网可访问的能力 prometheus：监控 dashboard：GUI federation：提供跨可用区的集群 Fluentd-elasticsearch：提供集群日志采集、存储与查询 … 分层设计 生态系统层：构建在Kubernetes之上的一系列开源项目、工具和解决方案，如日志、监控等 接口层：kubectl 命令行工具、客户端 SDK 以及集群联邦 治理层：系统度量（如基础设施、容器和网络的度量），自动化（如自动扩展、动态 Provision 等）以及策略管理（RBAC、Quota、PSP、NetworkPolicy 等） 应用层：部署（无状态/有状态应用、批处理、集群应用等）和路由（服务发现、DNS解析等） 内核层：对外提供API构建高层的应用，对内提供插件式应用执行环境，类似 linux 内核（这一层是必须的，这一层往上的都是可插拔，可替换为其他解决方案） 资源与对象 k8s 中所有的东西都是资源，如 node，pod…。k8s 中的资源是声明式的。 通过 yaml 或 json 来声明\n对象就是某一资源的持久化实体，对象的管理都是通过调用 kube-apiserver 提供的 RESTful API 来实现的，kubectl 本质也是调 API。\n规约和状态 几乎每个 Kubernetes 对象包含两个嵌套的对象字段，它们负责管理对象的配置\n规约（spec）：描述对象的期望状态（Desired State）\n状态（status）：描述对象的当前状态（Current State），任意时刻 master 都管理着当前状态使其向期望状态发展\n对象的创建 使用 json 或 yaml 描述资源，在描述中有一些必填字段： apiVersion - 创建该对象所使用的 Kubernetes API 的版本，弃用的 API 版本：https://kubernetes.io/zh-cn/docs/reference/using-api/deprecation-guide/ kind - 想要创建的对象的类别 metadata - 帮助唯一标识对象的一些数据，包括一个 name 字符串、UID 和可选的 namespace spec - 你所期望的该对象的状态 调用 API 创建对象 直接发 HTTP 请求，在请求体中携带 json 数据 使用 kubectl 指定用于描述资源的文件（一般是 yaml），kubectl 自动将其转换为 json 格式然后发起 HTTP 请求 使用其他工具调用 API 常见资源 元数据型 对于资源元数据的描述\nHorizontal Pod Autoscaler（HPA） HPA 可以根据指标（如CPU利用率或自定义指标）来监视应用程序的负载，并根据预定义的规则自动调整 Pod 的副本数量。\n控制管理器每隔 30s（可以通过–horizontal-pod-autoscaler-sync-period 修改）查询 metrics 的资源使用情况 支持三种 metrics 类型 预定义metrics（比如 Pod 的 CPU ）以利用率的方式计算 自定义的 Pod metrics，以原始值（raw value）的方式计算 自定义的 object metrics 支持两种 metrics 查询方式：Heapster 和自定义的 REST API 支持多 metrics PodTemplate 对 pod 的定义，被包含在其他的 Kubernetes 对象中（例如 Deployment、StatefulSet、DaemonSet 等控制器）\nLimitRange 可以对集群内 Request 和 Limits 的配置做一个全局的统一的限制，相当于批量设置了某一个范围内（某个命名空间）的 Pod 的资源使用限制。\n集群级 集群级的资源，在集群内部的所有资源都可以共享使用\nNamaspace 命名空间提供一种机制，将同一集群中的资源划分为相互隔离的组。 同一名字空间内的资源名称要唯一，但跨名字空间时没有这个要求。 名字空间作用域仅针对带有命名空间的对象（例如 Deployment、Service 等），这种作用域对集群范围的对象 （例如 StorageClass、Node、PersistentVolume 等）不适用。\nNode node 属于一种特殊的资源，k8s 只是负责管理 node，创建 node 对象时需要向 api-server 注册，注册后 k8s 会检查 node 是否健康，只有健康的 node 才会去真正运行 pod。\n一个节点包含以下信息：\n地址 HostName：由节点的内核报告。可以通过 kubelet 的 --hostname-override 参数覆盖。 ExternalIP：通常是节点的可外部路由（从集群外可访问）的 IP 地址。 InternalIP：通常是节点的仅可在集群内部路由的 IP 地址。 状态 容量和可分配 capacity 块中的字段标示节点拥有的资源总量。 allocatable 块指示节点上可供普通 Pod 使用的资源量。 信息 节点的一般信息，如内核版本、Kubernetes 版本 CluterRole ClusterRole 是一组权限的集合，但与 Role 不同的是，ClusterRole 可以在包括所有 Namespace 和集群级别的资源或非资源类型进行鉴权。\nClusterRoleBinding ClusterRoleBinding：将 Subject 绑定到 ClusterRole，ClusterRoleBinding 将使规则在所有命名空间中生效。可以绑定到该集群下的任意 User、Group 或 Service Account\n命名空间级 命名空间提供一种机制，将同一集群中的资源划分为相互隔离的组。\n工作负载型 工作负载是在 Kubernetes 上运行的应用程序。\nPod pod = containers + resource ，pod 是 k8s 中的最小可执行单元，可以看作一组容器加上它们所共享的资源，包括网络，文件系统等。但一般不会直接操作 pod，pod 的管理都是通过一些控制器来实现的。pod 通常有以下两种用法：\n运行单个容器的 Pod。“每个 Pod 一个容器” 模型是最常见的 Kubernetes 用例； 在这种情况下，可以将 Pod 看作单个容器的包装器，并且 Kubernetes 直接管理 Pod，而不是容器。 运行多个协同工作的容器的 Pod。 Pod 可能封装由多个紧密耦合且需要共享资源的共处容器组成的应用程序。 这些位于同一位置的容器可能形成单个内聚的服务单元 pod 可以很轻松的横向扩展，创建出多个同等的 pod，这些同等的 pod 通常被称为副本（Replication）\n控制器 控制器是用来创建和管理多个 Pod，管理副本和上线，并在集群范围内提供自修复能力。\n适用无状态服务：\nReplicationController（RC）：可以保证在任意时间运行 Pod 的副本数量，能够保证 Pod 总是可用的。（v1.11 弃用）\nReplicaSet（RS）：和 RC 的作用是一样的，可以通过 selector 来选择对哪些 pod 生效。\nDeployment： 对 RS 的更高层次封装，提供了一种声明性的方式来定义和管理 Pod 副本集的创建和更新过程。常见用途：\n应用部署 应用滚动升级和回滚 动态平滑扩缩容 灰度发布 健康检查与自愈 Deployment 并不直接操作 pod，是通过 ReplicaSet 来间接操作 pod\n适用有状态服务：\nStatefulSet：与 Deployment 类似，但会为 pod 维护稳定持久的状态\n特点：\n持久化存储：Pod 重新调度后还是能访问到相同的持久化数据，基于 PVC 来实现 Pod 重新调度后其 PodName 和 HostName 不变，基于 Headless Service（即没有 Cluster IP 的 Service）来实现 有序扩缩：扩缩容都是有序的 注意事项：\n所有Pod的Volume必须使用PersistentVolume或者是管理员事先创建好 删除StatefulSet时不会删除Volume StatefulSet 需要一个 Headless Service 来定义 DNS domain，需要在 StatefulSet 之前创建好 守护进程：\nDaemonSet：保证在每个 Node 上都运行一个 pod 副本。常见用法：\n在每个节点上运行集群守护进程 在每个节点上运行日志收集守护进程 在每个节点上运行监控守护进程 任务/定时任务：\nJob：一次性运行的任务，运行完后就删除 pod CronJob：定时的 Job 服务发现 Service Service API 是 Kubernetes 的组成部分，它是一种抽象，帮助你将 Pod 集合在网络上公开出去。 每个 Service 对象定义端点的一个逻辑集合（通常这些端点就是 Pod）以及如何访问到这些 Pod 的策略。\n通常用作集群内部的服务发现\nIngress Ingress 是用于将外部流量路由到 Kubernetes 集群内部服务的 API 和资源对象。它充当了集群内部服务的入口点，并提供了流量路由、负载均衡和 TLS 终止等功能。\ningress 需要配合 ingress controller 一起使用才能发挥作用，ingress 只是相当于路由规则的集合而已，真正实现路由功能的，是 Ingress Controller，ingress controller 和其它 k8s 组件一样，也是在 Pod 中运行。常用的 ingress controller 有 nginx、taefik 等\n存储 Volume Volume 用于提供持久性和可共享的存储解决方案，以供Pod中的容器共享使用。Volume 可以被理解为容器中的一个目录或文件，可以在容器的生命周期内保持数据的持久性。\nCSI Container Storage Interface 是 k8s 中的存储标准接口规范，只要满足了这个接口的规范，都可以用来作为容器存储系统。\n配置 ConfigMap 用来放配置，与 Secret 是类似的，只是 ConfigMap 放的是明文的数据，Secret 是密文存放。\nSecret Secret 解决了密码、token、密钥等敏感数据的配置问题，而不需要把这些敏感数据暴露到镜像或者 Pod Spec 中。Secret 可以以 Volume 或者环境变量的方式使用。有以下三种类型：\nService Account：用来访问 Kubernetes API，由 Kubernetes 自动创建，并且会自动挂载到 Pod 的 /run/secrets/kubernetes.io/serviceaccount 目录中； Opaque：base64 编码格式的 Secret，用来存储密码、密钥等； kubernetes.io/dockerconfigjson：用来存储私有 docker registry 的认证信息。 DownwardAPI downwardAPI 是提供了一种直接将 pod 信息注入到容器里面的能力，通常有两种方式：\n环境变量：用于单个变量，可以将 pod 信息和容器信息直接注入容器内部\nvolume 挂载：将 pod 信息生成为文件，直接挂载到容器内部中去\n其他 Role Role 是一组权限的集合，例如 Role 可以包含列出 Pod 权限及列出 Deployment 权限，Role 用于给某个 Namespace 中的资源进行鉴权。\nRoleBinding 将某一个资源绑定到 role 上，使其具备 role 所包含的权限\n深入 Pod 探针 Pod 探针（Probe）是用于检查和监视运行中的容器状态的一种机制。让 Kubernetes 知道容器是否正常工作，以及何时需要重新启动容器或将容器从服务负载均衡器中移除。\n探测机制 exec 在容器内执行指定命令。如果命令退出时返回码为 0 则认为诊断成功。\ngrpc 使用 gRPC 执行一个远程过程调用。 目标应该实现 gRPC 健康检查。 如果响应的状态是 “SERVING”，则认为诊断成功。\nhttpGet 对容器的 IP 地址上指定端口和路径执行 HTTP GET 请求。如果响应的状态码大于等于 200 且小于 400，则诊断被认为是成功的。\ntcpSocket 对容器的 IP 地址上的指定端口执行 TCP 检查。如果端口打开，则诊断被认为是成功的。 如果远程系统（容器）在打开连接后立即将其关闭，这算作是健康的。\n注意： 和其他机制不同，exec 探针的实现涉及每次执行时创建/复制多个进程。 因此，在集群中具有较高 pod 密度、较低的 initialDelaySeconds 和 periodSeconds 时长的时候， 配置任何使用 exec 机制的探针可能会增加节点的 CPU 负载。 这种场景下，请考虑使用其他探针机制以避免额外的开销。\n探测类型 livenessProbe 指示容器是否正在运行。如果存活态探测失败，则 kubelet 会杀死容器， 并且容器将根据其重启策略决定未来。如果容器不提供存活探针， 则默认状态为 Success。\nreadinessProbe 指示容器是否准备好为请求提供服务。如果就绪态探测失败， 端点控制器将从与 Pod 匹配的所有服务的端点列表中删除该 Pod 的 IP 地址。 初始延迟之前的就绪态的状态值默认为 Failure。 如果容器不提供就绪态探针，则默认状态为 Success。\nstartupProbe 指示容器中的应用是否已经启动。如果提供了启动探针，则所有其他探针都会被禁用，直到此探针成功为止。如果启动探测失败，kubelet 将杀死容器， 而容器依其重启策略进行重启。 如果容器没有提供启动探测，则默认状态为 Success。\n生命周期 init 容器 init 容器是在 Pod 就绪前运行的特殊容器，在 sepc.initContainers 中设定，Pod 创建时按设定的顺序执行，不支持探针和 lifecycle。\n容器回调 PostStart 在容器被创建后就执行，不能保证其与 ENTRYPOINT 的执行顺序\nPreStop 就是在 Pod 终止前容器会执行的一些行为。通常使用 PreStop 进行服务下线，数据清理，数据销毁等操作。\n有三种类型：\nexec：描述了在容器中运行的操作 httpGet：由 kubelet 向容器发送 HTTP 请求 tcpSocket：已经弃用 使用 .spec.containers.lifecycle 配置\nPod 退出流程 Endpoint 删除 pod 的 ip Pod 变为 Terminating 状态：变为删除中的状态后，会给 pod 一个宽限期，让 pod 去执行一些清理或销毁操作。使用 terminationGracePeriodSeconds 控制，对 pod 中的所有容器起作用 执行 PreStop 资源调度 Label 和 Selector lable 是一组描述资源元信息的键值对。创建方式：\n配置文件时标明：metadata.labels 临时创建或修改：kubectl label {object} {objectName} {labelName}={labelValue} --overwrite，临时创建的 label 在 deployment 的 template 改变后会丢失。 selector 匹配的是 label 满足条件的资源，常见的操作符包括等于（=）、不等于（!=）、存在（in）、不存在（notin）等。\nDeployment 的 selector 用于匹配 replicaSet，replicaSet 的 selector 用于匹配 pod。\nDeployment deployment 通过绑定一个 replicaSet 来间接实现对 pod 的管理，并且在 replicaSet 的功能上还增加了滚动更新、回滚等高级功能\n不需要显示的创建 RS，创建 deployment 时会自动创建一个 RS 并与其绑定在一起。\n滚动更新 仅当 Deployment Pod 模板（即 .spec.template）发生改变时，例如模板的标签或容器镜像被更新， 才会触发 Deployment 上线。其他更新（如对 Deployment 执行扩缩容的操作）不会触发上线动作。\n使用 kubectl set 命令更改 deloyment 中的 template，可以修改 image、env… 通过 kubectl edit deploy {deployName} 直接修改配置文件中的 template 使用 kubectl rollout status deploy {deployName} 查看滚动更新过程\n多 Deployment 动态更新 当一个滚动更新没完成的时候，template 又变了，就会将上一次的更新直接舍弃，去执行新的滚动更新。\n回滚 当一个 deployment 不稳定或根本跑不起来的时候，可以回滚到原来稳定的版本。\n使用 kubectl rollout history deploy {deployName} 来列出历史版本\n使用 kubuctl rollout undo deploy {deployName} 来回退到上一个版本，也可以在末尾加上 --to-revision={desired} 来指定回滚到哪一个版本\n通过设置 .spec.revisonHistoryLimit 来指定 deployment 保留多少 revison，如果设置为 0，则不允许 deployment 回退\n扩缩容 使用 kubectl scale --replicas={desired} {object} {objectName} 命令，deployment, replicaSet, replicaController, stateful Set 都可以使用这个命令来扩缩容\nkubectl edit 编辑 replicas 的数量即可扩缩容\nkubectl patch 命令就地更新\n扩缩容时是直接创建或者删除副本，pod template 没有发生改变，不会触发更新\n暂停与恢复 只要 pod template 一发生变更，就会触发 deployment 的更新，但是只有最后一个状态才是想要的，中途触发的更新都是没没必要的。\n使用 kubectl rollout pause deploy {deployName} 来暂时停止自动更新，更改完成后使用 kubectl rollout resume deploy {deploName} 来恢复暂停的 deployment。\nStatefulSet statefulSet 作业与 deployment 类似，但通常用于管理有状态的应用，通常用于需要满足以下情况的应用：\n稳定的、唯一的网络标识符: StatefulSet 确保每个 Pod 的名称按照指定的名称基础和序号顺序分配，并在重新部署、调度到新节点或者其他任何操作中保持不变。 稳定的、持久的存储: 即使 StatefulSet 中的 Pod 被重新调度，它们也能够保持对存储卷的访问。每个 Pod 都会被分配一个与 Pod 名称相对应的持久存储卷（PersistentVolume），这意味着即使 Pod 被删除，相同身份的新 Pod 也能重新挂载同一个存储卷。 有序的、优雅的部署和扩展: StatefulSet 中的 Pods 是按顺序创建和删除的；在创建下一个 Pod 前，上一个必须是运行且就绪的。这适用于扩展和缩容操作。这种有序性对于一些依赖于严格启动和关闭顺序的系统来说非常重要，比如分布式数据存储。 有序的、优雅的删除和终止: 当 Pods 被删除时，它们的终止也是有序的，并且遵循相反的顺序。这确保了在关闭时不会破坏应用程序的一致性和稳定性。 DNS StatefulSet 中每个 Pod 的 DNS 格式为 statefulSetName-{0..N-1}.serviceName.namespace.svc.cluster.local\nserviceName 为 Headless Service 的名字 0..N-1 为 Pod 所在的序号，从 0 开始到 N-1 statefulSetName 为 StatefulSet 的名字 namespace 为服务所在的 namespace，Headless Servic 和 StatefulSet 必须在相同的 namespace .cluster.local 为 Cluster Domain 扩缩容 使用 kubectl scale --replicas={desired} {object} {objectName} 命令，deployment, replicaSet, replicaController, stateful Set 都可以使用这个命令来扩缩容\nkubectl edit 编辑 replicas 的数量即可扩缩容\nkubectl patch 命令就地更新\nstatefulSet 的扩缩容是有序的，如从 0 ～ 4 创建，那么缩容时是 4 ～ 0\n更新 StatefulSet 的 .spec.updateStrategy 字段让你可以配置和禁用掉自动滚动更新 Pod 的容器、标签、资源请求或限制、以及注解。有两个允许的值：\nOnDelete\n当 StatefulSet 的 .spec.updateStrategy.type 设置为 OnDelete 时， 控制器将不会自动更新 StatefulSet 中的 Pod。 必须手动删除 Pod 以便让控制器创建新的 Pod，以此来对 StatefulSet 的 .spec.template 的变动作出反应。只有在 pod 被删除时会进行更新操作\nRollingUpdate\nRollingUpdate 更新策略对 StatefulSet 中的 Pod 执行自动的滚动更新。这是默认的更新策略。只有当 pod 的 template 发生改变时才会触发\n在 StatefulSet 中更新时是基于 pod 的顺序倒序更新的\n灰度发布 利用滚动更新中的 partition 属性，可以实现简易的灰度发布的效果\n例如我们有 5 个 pod，如果当前 partition 设置为 3，那么此时滚动更新时，只会更新那些 序号 \u003e= 3 的 pod\n利用该机制，我们可以通过控制 partition 的值，来决定只更新其中一部分 pod，确认没有问题后再主键增大更新的 pod 数量，最终实现全部 pod 更新\n删除 删除 StatefulSet 和 Headless Service\n**级联删除：**删除 statefulset 时会同时删除 pods\nkubectl delete sts {stsName}\n**非级联删除：**删除 statefulset 时不会删除 pods，删除 sts 后，pods 就没人管了，此时再删除 pod 不会重建的\nkubectl deelte sts {stsName} --cascade=false\n删除 service kubectl delete svc {svcName}\n删除 pvc\nkubectl delete pvc {pvcName}\nDaemonSet 为每一个匹配的 node 部署一个守护进程，一种简单的用法是为每种类型的守护进程在所有的节点上都启动一个 DaemonSet。 一个稍微复杂的用法是为同一种守护进程部署多个 DaemonSet；每个具有不同的标志， 并且对不同硬件类型具有不同的内存、CPU 要求。\n建议将更新模式设置为 OnDelete\n指定节点运行 使用 .spec.template.spec.nodeSelector 指定节点\nHPA 自动扩缩容 HPA 通过观察 pod 的 cpu、内存使用率或自定义 metrics 指标进行自动的扩容或缩容 pod 的数量。\n通常用于 Deployment，不适用于无法扩/缩容的对象，如 DaemonSet\n控制管理器每隔30s（可以通过–horizontal-pod-autoscaler-sync-period修改）查询metrics的资源使用情况\nCPU\\Memory 指标监控 直接使用 kubectl autoscale {object} {objectName} --cpu-percent=20 --min=2 --max=5 就可以创建一个 HPA，cpu-percent 指扩缩容的阈值，max, min 分别代表副本数的最大与最小值\n自定义指标 控制管理器开启 –horizontal-pod-autoscaler-use-rest-clients 控制管理器的 –apiserver 指向 API Server Aggregator 在 API Server Aggregator 中注册自定义的 metrics API Job 和 CronJob Job 只执行一次，CronJob 是定时任务，基于 crontab 实现\nInitContainer Init 容器是一种特殊容器，在 Pod 内的应用容器启动之前运行。Init 容器可以包括一些应用镜像中不存在的实用工具和安装脚本。\n它们总是运行到完成。 每个都必须在下一个启动之前成功完成。 如果 Pod 的 Init 容器失败，kubelet 会不断地重启该 Init 容器直到该容器成功为止。 然而，如果 Pod 对应的 restartPolicy 值为 “Never”，并且 Pod 的 Init 容器失败， 则 Kubernetes 会将整个 Pod 状态设置为失败。\n污点和容忍 污点是应用在节点上的属性，容忍度是 pod 的属性。污点和容忍度相互配合，可以用来避免 Pod 被分配到不合适的节点上。 每个节点上都可以应用一个或多个污点，这表示对于那些不能容忍这些污点的 Pod， 是不会被该节点接受的。\n使用 kubectl taint no noName {key}={value}:{effect} 为节点打污点，再末尾加个 - 就可以移除污点\n污点的影响：\nNoSchedule：不能容忍的 pod 不能被调度到该节点，但是已经存在的节点不会被驱逐 NoExecute：不能容忍的节点会被立即清除；能容忍且没有配置 tolerationSeconds 属性，则可以一直运行；设置了 tolerationSeconds: 3600 属性，则该 pod 还能继续在该节点运行 3600 秒 容忍就是在 pod spec 下配置 tolerances，需要与节点污点的键值对及影响相匹配，有两种匹配类型\nEqual：要求 k-v 都必须相同才表示能容忍此污点 Exist：只比较 k 不关心 v，只要 k 存在就可以容忍 亲和性 nodeSelector 只能选择拥有指定标签的节点，亲和性和反亲和性提供了逻辑上更细粒度的控制。\n节点亲和性 节点亲和性是为 pod 匹配 nod\nrequiredDuringSchedulingIgnoredDuringExecution： 调度器只有在规则被满足的时候才能执行调度。此功能类似于 nodeSelector， 但其语法表达能力更强。 preferredDuringSchedulingIgnoredDuringExecution： 调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod。 Pod 亲和性和反亲和性 pod 亲和性和反亲和性用于 pod 与 pod 之间调度的关系。Pod 的亲和性与反亲和性也有两种类型：\nrequiredDuringSchedulingIgnoredDuringExecution preferredDuringSchedulingIgnoredDuringExecution 例如，使用 requiredDuringSchedulingIgnoredDuringExecution 亲和性来告诉调度器， 将两个服务的 Pod 放到同一个云提供商可用区内，因为它们彼此之间通信非常频繁。 类似地，使用 preferredDuringSchedulingIgnoredDuringExecution 反亲和性来将同一服务的多个 Pod 分布到多个云提供商可用区中。\n要使用 Pod 间亲和性，可以使用 Pod 规约中的 .affinity.podAffinity 字段。 对于 Pod 间反亲和性，可以使用 Pod 规约中的 .affinity.podAntiAffinity 字段。\n服务发布 service、ingress 和 Gateway API 都可以用于服务发布，service 通常用于集群内部的通信，ingress 和 Gateway API 通常用于对集群外暴露服务。\nService 每当 service 被创建时，endpoint controller 都会创建一个与其绑定的 endpoints，endpoints 包含了所有与 service 选择器匹配到 ip 和端口。然后 endpoint controller 监视 pod 来动态的更新 service 和 endpoints。\n路由过程 DNS 解析: 集群内部的组件（比如一个 Pod）使用 Service 的名称来访问服务，该名称通过集群的 DNS 服务（比如 CoreDNS）解析为 ClusterIP。 到达 kube-proxy: 发往 ClusterIP 的流量到达节点上运行的 kube-proxy。根据 kube-proxy 的工作模式（如 iptables、ipvs 或用户空间模式），它会处理流量的转发。 网络规则处理: 在 iptables 模式下，kube-proxy 为每个 Service 配置 iptables 规则。当流量到达 ClusterIP 时，这些规则会被用来选择一个后端 Pod 并将流量转发到那里。 在 ipvs 模式下，kube-proxy 使用 IP 虚拟服务器（IPVS）来转发流量，这种方式通常提供更好的性能。 选择后端 Pod: kube-proxy 根据 Service 的 Endpoints 对象（包含所有匹配 Service 选择器的 Pod 的 IP 地址）来选择一个后端 Pod。如果配置了负载均衡（如轮询），则 kube-proxy 会相应地选择一个 Pod。 流量转发到 Pod: kube-proxy 将流量转发到选定的 Pod。如果 Pod 位于不同的节点上，流量将被路由到该节点，并最终到达目标 Pod。 重点：\nClusterIP 为服务提供了一个稳定的内部 IP 地址，无需关心后端 Pod 的实际位置。 kube-proxy 负责在节点层面上实现 Service 定义的流量路由机制。 流量管理和负载均衡是透明的，对于使用服务的 Pod 来说，它们只是简单地向 Service 的 ClusterIP 发送请求。 类型 ClusterIP 特点: 提供一个内部的 IP 地址来访问服务，只能在集群内部访问。 kube-proxy 使用 iptables 或 ipvs 路由到实际的 Pods。 默认的 Service 类型。 应用场景: 当你需要在 Kubernetes 集群内部让 Pods 之间通信时使用。 适用于不需要从集群外部访问的服务，例如内部数据库或后端服务。 访问方式： 在集群内部的任何 Pod 里，使用 ..svc.cluster.local 的 DNS 名称来访问 Service。如果 Service 和 Pod 在同一个命名空间中，可以省略命名空间和域后缀，直接使用 。 NodePort 特点: 在集群的每个节点上开放一个端口（NodePort），将该端口路由到 Service。 外部流量可以通过 : 访问服务。 NodePort 范围通常在 30000-32767。 应用场景: 当你需要从集群外部访问服务时使用，例如一个公共的 Web 应用。 常用于开发和测试环境，以便于访问集群内的服务。不推荐生产环境使用。 访问方式： 从集群外部，\t使用 : 来访问 Service，其中 是集群中任何一个节点的 IP 地址， 是 Service 定义中指定的 NodePort。 LoadBalancer 特点: 集成外部的云提供商负载均衡器。 自动为服务分配外部可访问的公共 IP 地址。 在后端自动配置节点上的 NodePort 和路由规则。 应用场景: 适用于需要从互联网或外部网络直接访问的服务。 常用于生产环境，特别是在云平台上运行的 Kubernetes 集群。 访问方式： Service 会被分配一个外部 IP 地址。你可以直接使用这个外部 IP 地址来访问 Service。 ExternalName 特点: 通过返回一个名字（而不是 IP 地址）来映射服务。 不使用代理或转发，仅作为 DNS 的别名。 spec.externalName 字段指定返回的名称。 应用场景: 当你需要通过 Kubernetes 服务访问外部服务时使用，例如引用集群外部的 REST 服务或数据库。 对于将传统服务迁移到 Kubernetes 环境时作为中间步骤。 Headless Service 特点: 没有 ClusterIP，DNS 查询会返回 Pods 的直接 IP 地址。 通过将 spec.clusterIP 设置为 \"None\" 来创建。 应用场景: 当你不需要负载均衡和单一服务 IP，而是需要直接访问每个 Pod 时使用。 常用于需要直接与 Pods 通信的服务发现机制，例如分布式数据库（如 Cassandra 或 Elasticsearch）。 访问集群外部服务 两种解决方案\n手动创建并维护 Endpoints 在创建 service 时不指定 selector，然后创建并维护一个 endpoints 与 service 绑定在一起。\n使用场景和优势：\n当需要将服务路由到特定的外部 IP 地址（而不是 DNS 名称）时。 提供了对负载均衡和健康检查等更细粒度控制的可能性。 适用于更复杂的网络场景，比如当外部服务有多个端点或特定的网络要求时。 注意事项：\n需要手动维护和更新 Endpoints，特别是当外部服务的 IP 地址发生变化时。 这种方法相对更复杂，需要更多的手动配置。 使用 ExternalName 将服务映射到外部的 DNS 名称，不会代理流量，而是依赖于 DNS 解析来指向外部服务。\n使用场景和优势\n当需要将服务映射到外部 DNS 名称时使用。 简单易用，无需手动维护 Endpoints。 适用于不需要复杂网络配置的场景，例如，当外部服务有一个稳定的 DNS 名称。 注意事项\n不支持 IP 地址，只能使用 DNS 名称。\n不会实现任何形式的负载均衡或健康检查。\nIngress Ingress 需要 ingress 和 ingress controlle 一起才能起作用，常用的 ingress controller 有 nginx、traefik、kong 等。\ningress 可通常用于管理对 HTTP 和 HTTPS 流量的访问，包括 URL 路由、重定向、TLS/SSL 终端和其他。\nIngress 资源定义: 定义一个 Ingress 资源，指定外部请求如何路由到集群内的服务。 例如，基于不同的主机名或路径将流量路由到不同的服务。 Ingress controller 的作用: Ingress 控制器监视 Kubernetes API 中的 Ingress 资源。 当 Ingress 资源被创建或更新时，控制器读取配置并更新其内部路由表，以便正确地转发外部请求。 流量链路 外部请求: 用户从外部发起 HTTP/HTTPS 请求，例如通过浏览器或其他客户端。 DNS 解析: 请求中的域名通过 DNS 解析为指向 Ingress 控制器的 IP 地址。 到达 Ingress 控制器: 请求到达托管 Ingress 控制器的节点。这通常是通过云提供商的负载均衡器或者直接暴露的节点端口实现的。 Ingress 控制器处理请求: Ingress 控制器根据其路由规则（根据请求的主机名、路径等）确定请求应该路由到哪个服务。 转发到后端服务: Ingress 控制器将请求转发到集群内相应的 Service。 Service 的负载均衡: Service 根据其负载均衡规则将请求路由到后端的一个或多个 Pods。 处理请求: Pod 接收请求，处理并返回响应。 响应返回给用户: 响应通过同样的路径返回给用户，完成请求的往返。 Gateway API 配置 ConfigMap configMap 可以看做一个明文的键值对\n直接使用 kubectl create cm -h 查看创建示例与 flag 说明\n常用命令：\nkubectl create cm {cmName} --from-file=/xxx/xxx/：读取某一文件夹或文件来创建 configMap kubectl create cm {cmNmae} --from-file=key=/xxx/xxx：读取某一个具体的文件并命名为 key 来创建 configMap kubectl create cm {cmName} --from-literal=key1=config1 --from-literal=key2=config2：根据 key-value 创建 configMap 常见用法 在 Pod template 中设置 .spec.containers.env 时使用 valueFrom.configMapKeyRef ，指定想要的 configMap 在 Pod template 中使用类型为 configMap 的 volume 并挂载到容器中 Secret secret 对键值对有一个加密的处理，如果要加密的字符中，包含了有特殊字符，需要使用转义符转移，例如 $ 转移后为 $，也可以对特殊字符使用单引号描述。\n默认情况下 secrete 是未加密的存储在 etcd 里，仅仅做了一个 base64 编码操作\n一般有三种类型的 secrete：\ndocker-registry：使用得最多，数据存储格式为 base64 编码后的 json，在 Pod template 中设置 .spec.imagePullSecrets.name 即可使用创建的 secret\nkubectl create secret docker-registry NAME --docker-username=user --docker-password=password --docker-email=email [--docker-server=string] [--from-file=[key=]source] [--dry-run=server|client|none] [options] generic：和 configMap 很相似\ntls\n目录覆盖 使用 ConfigMap 或 Secret 挂载到目录的时候，会将容器中源目录给覆盖掉，此时我们可能只想覆盖目录中的某一个文件，但是这样的操作会覆盖整个文件，因此需要使用到 SubPath\n配置方式：\n定义 volumes 时需要增加 items 属性，配置 key 和 path，且 path 的值不能从 / 开始 在容器内的 volumeMounts 中增加 subPath 属性，该值与 volumes 中 items.path 的值相同 修改配置 使用 edit 命令直接修改 使用 replace 命令修改：kubectl create cm --from-file=xxx --dry-run -o yaml | kubectl replace -f- 因为 --dry-run 命令只会打印 yaml，不会创建对象，所以得到了 yaml 后再使用 replace 即可 对于一些敏感服务的配置文件，在线上有时是不允许修改的，此时在配置 configmap 时可以设置 immutable: true 来禁止修改\n热加载 更新 configmap 中的配置，pod 中的更新策略：\n默认方式：会更新，更新周期是更新时间 + 缓存时间 subPath：不会更新 变量形式：如果 pod 中的一个变量是从 configmap 或 secret 中得到，同样也是不会更新的 对于 subPath 的方式，可以取消 subPath 的使用，将配置文件挂载到一个不存在的目录，避免目录的覆盖，然后再利用软连接的形式，将该文件链接到目标位置\nDownward API Downward API 允许容器在不使用 Kubernetes 客户端或 API 服务器的情况下获得自己或集群的信息。\n存储 列出常见存储\nVolumes volumes 主要解决两个问题：\n存储持久化 跨容器共享文件 HostPath hostPath 将节点上的文件或目录挂载到 Pod 上，此时该目录会变成持久化存储目录，即使 Pod 被删除后重启，也可以重新加载到该目录，该目录下的文件不会丢失\nEmptyDir EmptyDir 主要用于一个 Pod 中不同的 Container 共享数据使用的，由于只是在 Pod 内部使用，因此与其他 volume 比较大的区别是，当 Pod 如果被删除了，那么 emptyDir 也会被删除。\n存储介质可以是任意类型，如 SSD、磁盘或网络存储。可以将 emptyDir.medium 设置为 Memory 让 k8s 使用 tmpfs（内存支持文件系统），速度比较快，但是重启 tmpfs 节点时，数据会被清除，且设置的大小会计入到 Container 的内存限制中。\nemptyDir 的一些用途：\n缓存空间，例如基于磁盘的归并排序。 为耗时较长的计算任务提供检查点，以便任务能方便地从崩溃前状态恢复执行。 在 Web 服务器容器服务数据时，保存内容管理器容器获取的文件。 NFS nfs 卷能将 NFS (网络文件系统) 挂载到你的 Pod 中。 不像 emptyDir 那样会在删除 Pod 的同时也会被删除，nfs 卷的内容在删除 Pod 时会被保存，卷只是被卸载。 这意味着 nfs 卷可以被预先填充数据，并且这些数据可以在 Pod 之间共享。\n效率较低，不适用于频繁读写的场景。\nPV 与 PVC PV 是对持久化存储的一个抽象，对于 Pod 来说，屏蔽了底层存储的细节，仅对其提供存储资源（存储资源实际是由磁盘、nfs等提供的，但对于 Pod 来说就是 PV 提供的）。具有独立的生命周期，与 Pod 无关。\n每一个 Pod 中就通过 PVC 去申请 PV 的资源。\nCSI 是一个标准化的接口，旨在使存储提供商（如云供应商和存储硬件供应商）能够更容易地为 Kubernetes 提供存储解决方案，而无需每次都对 Kubernetes 本身进行修改或更新。任何实现了容器存储接口（Container Storage Interface，CSI）规范的存储系统都可以为 Kubernetes 提供持久卷（Persistent Volume，PV）资源。\n构建 静态构建：集群管理员创建若干 PV 卷。这些卷对象带有真实存储的细节信息， 并且对集群用户可用（可见）。PV 卷对象存在于 Kubernetes API 中，可供用户消费（使用）。 动态构建：如果 PV 已经不足以满足 PVC 的需求，可以通过 StorageClass 动态构建新的 PV 绑定 当用户创建一个 PVC 对象后，主节点会监测新的 PVC 对象，并且寻找与之匹配的 PV 卷，找到 PV 卷后将二者绑定在一起。\n如果找不到对应的 PV，则需要看 PVC 是否设置 StorageClass 来决定是否动态创建 PV，若没有配置，PVC 就会一致处于未绑定状态，直到有与之匹配的 PV 后才会申领绑定关系。\n使用 Pod 直接使用的是 PVC，当 PVC 与 PV 绑定后，PV 会被保护起来而无法删除\n回收策略 可以从 API 中将 PVC 对象删除， 从而允许该资源被回收再利用。PersistentVolume 对象的回收策略告诉集群， 当其被从申领中释放时如何处理该数据卷。\n有以下策略：\n保留：数据不会被删除，卷被视为已释放 删除 回收（已经弃用，用动态制备替代） PV 状态 Available：空闲，未被绑定 Bound：已经被 PVC 绑定 Released：PVC 被删除，资源已回收，但是 PV 未被重新使用 Failed：自动回收失败 StorageClass 存储类可以实现 PV 的动态构建，每一个 sc 都有一个 Provisioner 制备器用来决定使用哪个卷插件制备 PV，该字段必须指定。\n使用存储类就可以不再手动创建 PV。\n认证与权限 所有对 k8s 的操作其实都是调 control-plane 上 api-server 的 RESTful 接口，调用这些接口都要经过认证和鉴权。\n认证 k8s 集群中有两类用户：服务账户（Service Account）和普通账户（User Account）\n注意：在 Kubernetes 中不能通过 API 调用将普通用户添加到集群中。\n普通帐户是针对（人）用户的，服务账户针对 Pod 进程。 普通帐户是全局性。在集群所有 namespaces 中，名称具有惟一性。 通常，群集的普通帐户可以与企业数据库同步，新的普通帐户创建需要特殊权限。服务账户创建目的是更轻量化，允许集群用户为特定任务创建服务账户。 普通帐户和服务账户的审核注意事项不同。 对于复杂系统的配置包，可以包括对该系统的各种组件的服务账户的定义。 service account 由三个控制器来维护：\nService Account Admission Controller：是 api-server 的一部分\n如果 pod 没有设置 ServiceAccount，则将 ServiceAccount 设置为 default。\n确保 pod 引用的 ServiceAccount 存在，否则将会拒绝请求。\n如果 pod 不包含任何 ImagePullSecrets，则将ServiceAccount 的 ImagePullSecrets 会添加到 pod 中。\n为包含 API 访问的 Token 的 pod 添加了一个 volume。\n把 volumeSource 添加到安装在 pod 的每个容器中，挂载在 /var/run/secrets/kubernetes.io/serviceaccount。\nToken Controller：是 controller-manager 的一部分：\n观察 serviceAccount 的创建，并创建一个相应的 Secret 来允许 API 访问。 观察 serviceAccount 的删除，并删除所有相应的ServiceAccountToken Secret 观察 secret 添加，并确保关联的 ServiceAccount 存在，并在需要时向 secret 中添加一个 Token。 观察 secret 删除，并在需要时对应 ServiceAccount 的关联 Service Account Controller：在 namespaces 里管理ServiceAccount，并确保每个有效的 namespaces 中都存在一个名为 “default” 的 ServiceAccount。\nRBAC k8s 中的权限控制是基于 RBAC 的。有两组作用域不同但机制相同的对象来控制权限\n集群作用域：\nClusterRole：功能与 Role 一样，区别是资源类型为集群类型，而 Role 只在 Namespace ClusterRolebinding：作用于集群之上，可以绑定到该集群下的任意 User、Group 或 Service Account 命名空间作用域：\nRole：代表一个角色，会包含一组权限，没有拒绝规则，只是附加允许。它是 Namespace 级别的资源，只能作用与 Namespace 之内。 RoleBinding：作用于 Namespace 内，可以将 Role 或 ClusterRole 绑定到 User、Group、Service Account 上。 ",
+  "wordCount" : "2121",
+  "inLanguage": "en",
+  "datePublished": "2023-12-15T00:00:00Z",
+  "dateModified": "2023-12-15T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Cqqqq777"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://cqqqq777.github.io/posts/k8s/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Home",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://cqqqq777.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://cqqqq777.github.io/" accesskey="h" title="Home (Alt + H)">Home</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://cqqqq777.github.io/archives" title="Archive">
+                    <span>Archive</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://cqqqq777.github.io/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://cqqqq777.github.io/tags/" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/cqqqq777" title="GitHub">
+                    <span>GitHub</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+            <li>
+                <a href="https://juejin.cn/user/84011460075709" title="Juejin">
+                    <span>Juejin</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://cqqqq777.github.io/">Home</a>&nbsp;»&nbsp;<a href="https://cqqqq777.github.io/posts/">Posts</a></div>
+    <h1 class="post-title">
+      k8s
+    </h1>
+    <div class="post-meta"><span title='2023-12-15 00:00:00 +0000 UTC'>December 15, 2023</span>&nbsp;·&nbsp;10 min&nbsp;·&nbsp;Cqqqq777&nbsp;|&nbsp;<a href="https://https://github.com/cqqqq777/content/posts/k8s.md" rel="noopener noreferrer" target="_blank">Suggest Changes</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e6%9e%b6%e6%9e%84" aria-label="架构">架构</a><ul>
+                        
+                <li>
+                    <a href="#control-plane" aria-label="Control Plane">Control Plane</a></li>
+                <li>
+                    <a href="#node" aria-label="Node">Node</a></li>
+                <li>
+                    <a href="#%e9%99%84%e5%8a%a0%e7%bb%84%e4%bb%b6" aria-label="附加组件">附加组件</a></li>
+                <li>
+                    <a href="#%e5%88%86%e5%b1%82%e8%ae%be%e8%ae%a1" aria-label="分层设计">分层设计</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%b5%84%e6%ba%90%e4%b8%8e%e5%af%b9%e8%b1%a1" aria-label="资源与对象">资源与对象</a><ul>
+                        
+                <li>
+                    <a href="#%e8%a7%84%e7%ba%a6%e5%92%8c%e7%8a%b6%e6%80%81" aria-label="规约和状态">规约和状态</a></li>
+                <li>
+                    <a href="#%e5%af%b9%e8%b1%a1%e7%9a%84%e5%88%9b%e5%bb%ba" aria-label="对象的创建">对象的创建</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%b8%b8%e8%a7%81%e8%b5%84%e6%ba%90" aria-label="常见资源">常见资源</a><ul>
+                        
+                <li>
+                    <a href="#%e5%85%83%e6%95%b0%e6%8d%ae%e5%9e%8b" aria-label="元数据型">元数据型</a><ul>
+                        
+                <li>
+                    <a href="#horizontal-pod-autoscalerhpa" aria-label="Horizontal Pod Autoscaler（HPA）">Horizontal Pod Autoscaler（HPA）</a></li>
+                <li>
+                    <a href="#podtemplate" aria-label="PodTemplate">PodTemplate</a></li>
+                <li>
+                    <a href="#limitrange" aria-label="LimitRange">LimitRange</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%9b%86%e7%be%a4%e7%ba%a7" aria-label="集群级">集群级</a><ul>
+                        
+                <li>
+                    <a href="#namaspace" aria-label="Namaspace">Namaspace</a></li>
+                <li>
+                    <a href="#node-1" aria-label="Node">Node</a></li>
+                <li>
+                    <a href="#cluterrole" aria-label="CluterRole">CluterRole</a></li>
+                <li>
+                    <a href="#clusterrolebinding" aria-label="ClusterRoleBinding">ClusterRoleBinding</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%91%bd%e5%90%8d%e7%a9%ba%e9%97%b4%e7%ba%a7" aria-label="命名空间级">命名空间级</a><ul>
+                        
+                <li>
+                    <a href="#%e5%b7%a5%e4%bd%9c%e8%b4%9f%e8%bd%bd%e5%9e%8b" aria-label="工作负载型">工作负载型</a><ul>
+                        
+                <li>
+                    <a href="#pod" aria-label="Pod">Pod</a></li>
+                <li>
+                    <a href="#%e6%8e%a7%e5%88%b6%e5%99%a8" aria-label="控制器">控制器</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%9c%8d%e5%8a%a1%e5%8f%91%e7%8e%b0" aria-label="服务发现">服务发现</a><ul>
+                        
+                <li>
+                    <a href="#service" aria-label="Service">Service</a></li>
+                <li>
+                    <a href="#ingress" aria-label="Ingress">Ingress</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%ad%98%e5%82%a8" aria-label="存储">存储</a><ul>
+                        
+                <li>
+                    <a href="#volume" aria-label="Volume">Volume</a></li>
+                <li>
+                    <a href="#csi" aria-label="CSI">CSI</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%85%8d%e7%bd%ae" aria-label="配置">配置</a><ul>
+                        
+                <li>
+                    <a href="#configmap" aria-label="ConfigMap">ConfigMap</a></li>
+                <li>
+                    <a href="#secret" aria-label="Secret">Secret</a></li>
+                <li>
+                    <a href="#downwardapi" aria-label="DownwardAPI">DownwardAPI</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%85%b6%e4%bb%96" aria-label="其他">其他</a><ul>
+                        
+                <li>
+                    <a href="#role" aria-label="Role">Role</a></li>
+                <li>
+                    <a href="#rolebinding" aria-label="RoleBinding">RoleBinding</a></li></ul>
+                </li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%b7%b1%e5%85%a5-pod" aria-label="深入 Pod">深入 Pod</a><ul>
+                        
+                <li>
+                    <a href="#%e6%8e%a2%e9%92%88" aria-label="探针">探针</a><ul>
+                        
+                <li>
+                    <a href="#%e6%8e%a2%e6%b5%8b%e6%9c%ba%e5%88%b6" aria-label="探测机制">探测机制</a><ul>
+                        
+                <li>
+                    <a href="#exec" aria-label="exec">exec</a></li>
+                <li>
+                    <a href="#grpc" aria-label="grpc">grpc</a></li>
+                <li>
+                    <a href="#httpget" aria-label="httpGet">httpGet</a></li>
+                <li>
+                    <a href="#tcpsocket" aria-label="tcpSocket">tcpSocket</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%8e%a2%e6%b5%8b%e7%b1%bb%e5%9e%8b" aria-label="探测类型">探测类型</a><ul>
+                        
+                <li>
+                    <a href="#livenessprobe" aria-label="livenessProbe">livenessProbe</a></li>
+                <li>
+                    <a href="#readinessprobe" aria-label="readinessProbe">readinessProbe</a></li>
+                <li>
+                    <a href="#startupprobe" aria-label="startupProbe">startupProbe</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e7%94%9f%e5%91%bd%e5%91%a8%e6%9c%9f" aria-label="生命周期">生命周期</a><ul>
+                        
+                <li>
+                    <a href="#init-%e5%ae%b9%e5%99%a8" aria-label="init 容器">init 容器</a></li>
+                <li>
+                    <a href="#%e5%ae%b9%e5%99%a8%e5%9b%9e%e8%b0%83" aria-label="容器回调">容器回调</a></li>
+                <li>
+                    <a href="#pod-%e9%80%80%e5%87%ba%e6%b5%81%e7%a8%8b" aria-label="Pod 退出流程">Pod 退出流程</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%b5%84%e6%ba%90%e8%b0%83%e5%ba%a6" aria-label="资源调度">资源调度</a><ul>
+                        
+                <li>
+                    <a href="#label-%e5%92%8c-selector" aria-label="Label 和 Selector">Label 和 Selector</a></li>
+                <li>
+                    <a href="#deployment" aria-label="Deployment">Deployment</a><ul>
+                        
+                <li>
+                    <a href="#%e6%bb%9a%e5%8a%a8%e6%9b%b4%e6%96%b0" aria-label="滚动更新">滚动更新</a><ul>
+                        
+                <li>
+                    <a href="#%e5%a4%9a-deployment-%e5%8a%a8%e6%80%81%e6%9b%b4%e6%96%b0" aria-label="多 Deployment 动态更新">多 Deployment 动态更新</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9b%9e%e6%bb%9a" aria-label="回滚">回滚</a></li>
+                <li>
+                    <a href="#%e6%89%a9%e7%bc%a9%e5%ae%b9" aria-label="扩缩容">扩缩容</a></li>
+                <li>
+                    <a href="#%e6%9a%82%e5%81%9c%e4%b8%8e%e6%81%a2%e5%a4%8d" aria-label="暂停与恢复">暂停与恢复</a></li></ul>
+                </li>
+                <li>
+                    <a href="#statefulset" aria-label="StatefulSet">StatefulSet</a><ul>
+                        
+                <li>
+                    <a href="#dns" aria-label="DNS">DNS</a></li>
+                <li>
+                    <a href="#%e6%89%a9%e7%bc%a9%e5%ae%b9-1" aria-label="扩缩容">扩缩容</a></li>
+                <li>
+                    <a href="#%e6%9b%b4%e6%96%b0" aria-label="更新">更新</a><ul>
+                        
+                <li>
+                    <a href="#%e7%81%b0%e5%ba%a6%e5%8f%91%e5%b8%83" aria-label="灰度发布">灰度发布</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%88%a0%e9%99%a4" aria-label="删除">删除</a></li></ul>
+                </li>
+                <li>
+                    <a href="#daemonset" aria-label="DaemonSet">DaemonSet</a><ul>
+                        
+                <li>
+                    <a href="#%e6%8c%87%e5%ae%9a%e8%8a%82%e7%82%b9%e8%bf%90%e8%a1%8c" aria-label="指定节点运行">指定节点运行</a></li></ul>
+                </li>
+                <li>
+                    <a href="#hpa-%e8%87%aa%e5%8a%a8%e6%89%a9%e7%bc%a9%e5%ae%b9" aria-label="HPA 自动扩缩容">HPA 自动扩缩容</a><ul>
+                        
+                <li>
+                    <a href="#cpumemory-%e6%8c%87%e6%a0%87%e7%9b%91%e6%8e%a7" aria-label="CPU\Memory 指标监控">CPU\Memory 指标监控</a></li>
+                <li>
+                    <a href="#%e8%87%aa%e5%ae%9a%e4%b9%89%e6%8c%87%e6%a0%87" aria-label="自定义指标">自定义指标</a></li></ul>
+                </li>
+                <li>
+                    <a href="#job-%e5%92%8c-cronjob" aria-label="Job 和 CronJob">Job 和 CronJob</a></li>
+                <li>
+                    <a href="#initcontainer" aria-label="InitContainer">InitContainer</a></li>
+                <li>
+                    <a href="#%e6%b1%a1%e7%82%b9%e5%92%8c%e5%ae%b9%e5%bf%8d" aria-label="污点和容忍">污点和容忍</a></li>
+                <li>
+                    <a href="#%e4%ba%b2%e5%92%8c%e6%80%a7" aria-label="亲和性">亲和性</a><ul>
+                        
+                <li>
+                    <a href="#%e8%8a%82%e7%82%b9%e4%ba%b2%e5%92%8c%e6%80%a7" aria-label="节点亲和性">节点亲和性</a></li>
+                <li>
+                    <a href="#pod-%e4%ba%b2%e5%92%8c%e6%80%a7%e5%92%8c%e5%8f%8d%e4%ba%b2%e5%92%8c%e6%80%a7" aria-label="Pod 亲和性和反亲和性">Pod 亲和性和反亲和性</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%9c%8d%e5%8a%a1%e5%8f%91%e5%b8%83" aria-label="服务发布">服务发布</a><ul>
+                        
+                <li>
+                    <a href="#service-1" aria-label="Service">Service</a><ul>
+                        
+                <li>
+                    <a href="#%e8%b7%af%e7%94%b1%e8%bf%87%e7%a8%8b" aria-label="路由过程">路由过程</a></li>
+                <li>
+                    <a href="#%e7%b1%bb%e5%9e%8b" aria-label="类型">类型</a><ul>
+                        
+                <li>
+                    <a href="#clusterip" aria-label="ClusterIP">ClusterIP</a></li>
+                <li>
+                    <a href="#nodeport" aria-label="NodePort">NodePort</a></li>
+                <li>
+                    <a href="#loadbalancer" aria-label="LoadBalancer">LoadBalancer</a></li>
+                <li>
+                    <a href="#externalname" aria-label="ExternalName">ExternalName</a></li>
+                <li>
+                    <a href="#headless-service" aria-label="Headless Service">Headless Service</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%ae%bf%e9%97%ae%e9%9b%86%e7%be%a4%e5%a4%96%e9%83%a8%e6%9c%8d%e5%8a%a1" aria-label="访问集群外部服务">访问集群外部服务</a><ul>
+                        
+                <li>
+                    <a href="#%e6%89%8b%e5%8a%a8%e5%88%9b%e5%bb%ba%e5%b9%b6%e7%bb%b4%e6%8a%a4-endpoints" aria-label="手动创建并维护 Endpoints">手动创建并维护 Endpoints</a></li>
+                <li>
+                    <a href="#%e4%bd%bf%e7%94%a8-externalname" aria-label="使用 ExternalName">使用 ExternalName</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#ingress-1" aria-label="Ingress">Ingress</a><ul>
+                        
+                <li>
+                    <a href="#%e6%b5%81%e9%87%8f%e9%93%be%e8%b7%af" aria-label="流量链路">流量链路</a></li></ul>
+                </li>
+                <li>
+                    <a href="#gateway-api" aria-label="Gateway API">Gateway API</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%85%8d%e7%bd%ae-1" aria-label="配置">配置</a><ul>
+                        
+                <li>
+                    <a href="#configmap-1" aria-label="ConfigMap">ConfigMap</a><ul>
+                        
+                <li>
+                    <a href="#%e5%b8%b8%e8%a7%81%e7%94%a8%e6%b3%95" aria-label="常见用法">常见用法</a></li></ul>
+                </li>
+                <li>
+                    <a href="#secret-1" aria-label="Secret">Secret</a></li>
+                <li>
+                    <a href="#%e7%9b%ae%e5%bd%95%e8%a6%86%e7%9b%96" aria-label="目录覆盖">目录覆盖</a></li>
+                <li>
+                    <a href="#%e4%bf%ae%e6%94%b9%e9%85%8d%e7%bd%ae" aria-label="修改配置">修改配置</a></li>
+                <li>
+                    <a href="#%e7%83%ad%e5%8a%a0%e8%bd%bd" aria-label="热加载">热加载</a></li>
+                <li>
+                    <a href="#downward-api" aria-label="Downward API">Downward API</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%ad%98%e5%82%a8-1" aria-label="存储">存储</a><ul>
+                        
+                <li>
+                    <a href="#volumes" aria-label="Volumes">Volumes</a><ul>
+                        
+                <li>
+                    <a href="#hostpath" aria-label="HostPath">HostPath</a></li>
+                <li>
+                    <a href="#emptydir" aria-label="EmptyDir">EmptyDir</a></li></ul>
+                </li>
+                <li>
+                    <a href="#nfs" aria-label="NFS">NFS</a></li>
+                <li>
+                    <a href="#pv-%e4%b8%8e-pvc" aria-label="PV 与 PVC">PV 与 PVC</a><ul>
+                        
+                <li>
+                    <a href="#%e6%9e%84%e5%bb%ba" aria-label="构建">构建</a></li>
+                <li>
+                    <a href="#%e7%bb%91%e5%ae%9a" aria-label="绑定">绑定</a></li>
+                <li>
+                    <a href="#%e4%bd%bf%e7%94%a8" aria-label="使用">使用</a></li>
+                <li>
+                    <a href="#%e5%9b%9e%e6%94%b6%e7%ad%96%e7%95%a5" aria-label="回收策略">回收策略</a></li>
+                <li>
+                    <a href="#pv-%e7%8a%b6%e6%80%81" aria-label="PV 状态">PV 状态</a></li>
+                <li>
+                    <a href="#storageclass" aria-label="StorageClass">StorageClass</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%ae%a4%e8%af%81%e4%b8%8e%e6%9d%83%e9%99%90" aria-label="认证与权限">认证与权限</a><ul>
+                        
+                <li>
+                    <a href="#%e8%ae%a4%e8%af%81" aria-label="认证">认证</a></li>
+                <li>
+                    <a href="#rbac" aria-label="RBAC">RBAC</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="架构">架构<a hidden class="anchor" aria-hidden="true" href="#架构">#</a></h2>
+<p>集群中的节点分为两种：<strong>control plane 和 node</strong></p>
+<h3 id="control-plane">Control Plane<a hidden class="anchor" aria-hidden="true" href="#control-plane">#</a></h3>
+<p>负责管理和控制集群的整体行为，通常包含以下组件：</p>
+<ul>
+<li>kube-apiserver：负责对外提供 RESTful API，可水平扩容</li>
+<li>kube-controller-manager：负责运行控制器，通常包括以下控制器：
+<ul>
+<li>节点控制器（Node Controller）：负责监控和管理集群中的节点（Node）。它的主要功能是确保集群中的节点正常运行，并处理节点故障和恢复。</li>
+<li>任务控制器（Job Controller）：监测代表一次性任务的 Job 对象，然后创建 Pods 来运行这些任务直至完成</li>
+<li>端点分片控制器（EndpointSlice controller）：填充端点分片（EndpointSlice）对象（以提供 Service 和 Pod 之间的链接）</li>
+<li>服务账号控制器（ServiceAccount controller）：为新的命名空间创建默认的服务账号（ServiceAccount）</li>
+<li>&hellip;</li>
+</ul>
+</li>
+<li>cloud-controller-manager：允许你将你的集群连接到云提供商的 API 之上， 并将与该云平台交互的组件同与你的集群交互的组件分离开来。只有在服务上云的时候才会用到。包括以下控制器：
+<ul>
+<li>节点控制器：在云上监控和管理集群中的节点。</li>
+<li>路由控制器：负责适当地配置云平台中的路由，以便 Kubernetes 集群中不同节点上的容器之间可以相互通信。</li>
+<li>服务控制器：确保服务的正常运行以及与其他组件的协调。</li>
+</ul>
+</li>
+<li>kube-scheduler： 负责监视新创建的、未指定运行 node 的 Pods， 并选择 node 来让 Pod 在上面运行。</li>
+<li>etcd：存储集群元信息</li>
+</ul>
+<h3 id="node">Node<a hidden class="anchor" aria-hidden="true" href="#node">#</a></h3>
+<p>实际运行 Pod，通常包含以下组件：</p>
+<ul>
+<li>kubelet：负责维护容器的生命周期，同时也负责 Volume（CVI）和网络（CNI）的管理</li>
+<li>kube-proxy：负责为 Service 提供 cluster 内部的服务发现和负载均衡</li>
+<li>cri：负责镜像管理以及 Pod 和容器的真正运行</li>
+</ul>
+<p><img loading="lazy" src="https://kubernetes.io/images/docs/kubernetes-cluster-architecture.svg" alt="Kubernetes 组件"  />
+</p>
+<h3 id="附加组件">附加组件<a hidden class="anchor" aria-hidden="true" href="#附加组件">#</a></h3>
+<ul>
+<li>Kube-dns：为集群提供 DNS 服务</li>
+<li>ingress-controller：为集群提供外网可访问的能力</li>
+<li>prometheus：监控</li>
+<li>dashboard：GUI</li>
+<li>federation：提供跨可用区的集群</li>
+<li>Fluentd-elasticsearch：提供集群日志采集、存储与查询</li>
+<li>&hellip;</li>
+</ul>
+<h3 id="分层设计">分层设计<a hidden class="anchor" aria-hidden="true" href="#分层设计">#</a></h3>
+<ol>
+<li>生态系统层：构建在Kubernetes之上的一系列开源项目、工具和解决方案，如日志、监控等</li>
+<li>接口层：kubectl 命令行工具、客户端 SDK 以及集群联邦</li>
+<li>治理层：系统度量（如基础设施、容器和网络的度量），自动化（如自动扩展、动态 Provision 等）以及策略管理（RBAC、Quota、PSP、NetworkPolicy 等）</li>
+<li>应用层：部署（无状态/有状态应用、批处理、集群应用等）和路由（服务发现、DNS解析等）</li>
+<li>内核层：对外提供API构建高层的应用，对内提供插件式应用执行环境，类似 linux 内核（这一层是必须的，这一层往上的都是可插拔，可替换为其他解决方案）</li>
+</ol>
+<h2 id="资源与对象">资源与对象<a hidden class="anchor" aria-hidden="true" href="#资源与对象">#</a></h2>
+<p>k8s 中所有的东西都是资源，如 node，pod&hellip;。k8s 中的资源是声明式的。 通过 yaml 或 json 来声明</p>
+<p>对象就是某一资源的持久化实体，对象的管理都是通过调用 kube-apiserver 提供的 RESTful API 来实现的，kubectl 本质也是调 API。</p>
+<h3 id="规约和状态">规约和状态<a hidden class="anchor" aria-hidden="true" href="#规约和状态">#</a></h3>
+<p>几乎每个 Kubernetes 对象包含两个嵌套的对象字段，它们负责管理对象的配置</p>
+<p>规约（spec）：描述对象的<strong>期望状态（Desired State）</strong></p>
+<p>状态（status）：描述对象的<strong>当前状态（Current State）</strong>，任意时刻 master 都管理着当前状态使其向期望状态发展</p>
+<h3 id="对象的创建">对象的创建<a hidden class="anchor" aria-hidden="true" href="#对象的创建">#</a></h3>
+<ol>
+<li>使用 json 或 yaml 描述资源，在描述中有一些必填字段：
+<ul>
+<li><code>apiVersion</code> - 创建该对象所使用的 Kubernetes API 的版本，弃用的 API 版本：https://kubernetes.io/zh-cn/docs/reference/using-api/deprecation-guide/</li>
+<li><code>kind</code> - 想要创建的对象的类别</li>
+<li><code>metadata</code> - 帮助唯一标识对象的一些数据，包括一个 <code>name</code> 字符串、<code>UID</code> 和可选的 <code>namespace</code></li>
+<li><code>spec</code> - 你所期望的该对象的状态</li>
+</ul>
+</li>
+<li>调用 API 创建对象
+<ul>
+<li>直接发 HTTP 请求，在请求体中携带 json 数据</li>
+<li>使用 kubectl 指定用于描述资源的文件（一般是 yaml），kubectl 自动将其转换为 json 格式然后发起 HTTP 请求</li>
+<li>使用其他工具调用 API</li>
+</ul>
+</li>
+</ol>
+<h2 id="常见资源">常见资源<a hidden class="anchor" aria-hidden="true" href="#常见资源">#</a></h2>
+<h3 id="元数据型">元数据型<a hidden class="anchor" aria-hidden="true" href="#元数据型">#</a></h3>
+<p>对于资源元数据的描述</p>
+<h4 id="horizontal-pod-autoscalerhpa">Horizontal Pod Autoscaler（HPA）<a hidden class="anchor" aria-hidden="true" href="#horizontal-pod-autoscalerhpa">#</a></h4>
+<p>HPA 可以根据指标（如CPU利用率或自定义指标）来监视应用程序的负载，并根据预定义的规则自动调整 Pod 的副本数量。</p>
+<ul>
+<li>控制管理器每隔 30s（可以通过–horizontal-pod-autoscaler-sync-period 修改）查询 metrics 的资源使用情况</li>
+<li>支持三种 metrics 类型
+<ul>
+<li>预定义metrics（比如 Pod 的 CPU ）以利用率的方式计算</li>
+<li>自定义的 Pod metrics，以原始值（raw value）的方式计算</li>
+<li>自定义的 object metrics</li>
+</ul>
+</li>
+<li>支持两种 metrics 查询方式：Heapster 和自定义的 REST API</li>
+<li>支持多 metrics</li>
+</ul>
+<h4 id="podtemplate">PodTemplate<a hidden class="anchor" aria-hidden="true" href="#podtemplate">#</a></h4>
+<p>对 pod 的定义，被包含在其他的 Kubernetes 对象中（例如 Deployment、StatefulSet、DaemonSet 等控制器）</p>
+<h4 id="limitrange">LimitRange<a hidden class="anchor" aria-hidden="true" href="#limitrange">#</a></h4>
+<p>可以对集群内 Request 和 Limits 的配置做一个全局的统一的限制，相当于批量设置了某一个范围内（某个命名空间）的 Pod 的资源使用限制。</p>
+<h3 id="集群级">集群级<a hidden class="anchor" aria-hidden="true" href="#集群级">#</a></h3>
+<p>集群级的资源，在集群内部的所有资源都可以共享使用</p>
+<h4 id="namaspace">Namaspace<a hidden class="anchor" aria-hidden="true" href="#namaspace">#</a></h4>
+<p>命名空间提供一种机制，将同一集群中的资源划分为相互隔离的组。 同一名字空间内的资源名称要唯一，但跨名字空间时没有这个要求。 名字空间作用域仅针对带有命名空间的对象（例如 Deployment、Service 等），这种作用域对集群范围的对象 （例如 StorageClass、Node、PersistentVolume 等）不适用。</p>
+<h4 id="node-1">Node<a hidden class="anchor" aria-hidden="true" href="#node-1">#</a></h4>
+<p>node 属于一种特殊的资源，k8s 只是负责管理 node，创建 node 对象时需要向 api-server 注册，注册后 k8s 会检查 node 是否健康，只有健康的 node 才会去真正运行 pod。</p>
+<p>一个节点包含以下信息：</p>
+<ul>
+<li>地址
+<ul>
+<li>HostName：由节点的内核报告。可以通过 kubelet 的 <code>--hostname-override</code> 参数覆盖。</li>
+<li>ExternalIP：通常是节点的可外部路由（从集群外可访问）的 IP 地址。</li>
+<li>InternalIP：通常是节点的仅可在集群内部路由的 IP 地址。</li>
+</ul>
+</li>
+<li>状态</li>
+<li>容量和可分配
+<ul>
+<li><code>capacity</code>  块中的字段标示节点拥有的资源总量。</li>
+<li><code>allocatable</code>  块指示节点上可供普通 Pod 使用的资源量。</li>
+</ul>
+</li>
+<li>信息
+<ul>
+<li>节点的一般信息，如内核版本、Kubernetes 版本</li>
+</ul>
+</li>
+</ul>
+<h4 id="cluterrole">CluterRole<a hidden class="anchor" aria-hidden="true" href="#cluterrole">#</a></h4>
+<p>ClusterRole 是一组权限的集合，但与 Role 不同的是，ClusterRole 可以在包括所有 Namespace 和集群级别的资源或非资源类型进行鉴权。</p>
+<h4 id="clusterrolebinding">ClusterRoleBinding<a hidden class="anchor" aria-hidden="true" href="#clusterrolebinding">#</a></h4>
+<p>ClusterRoleBinding：将 Subject 绑定到 ClusterRole，ClusterRoleBinding 将使规则在所有命名空间中生效。可以绑定到该集群下的任意 User、Group 或 Service Account</p>
+<h3 id="命名空间级">命名空间级<a hidden class="anchor" aria-hidden="true" href="#命名空间级">#</a></h3>
+<p>命名空间提供一种机制，将同一集群中的资源划分为相互隔离的组。</p>
+<h4 id="工作负载型">工作负载型<a hidden class="anchor" aria-hidden="true" href="#工作负载型">#</a></h4>
+<p>工作负载是在 Kubernetes 上运行的应用程序。</p>
+<h5 id="pod">Pod<a hidden class="anchor" aria-hidden="true" href="#pod">#</a></h5>
+<p>pod = containers + resource ，pod 是 k8s 中的最小可执行单元，可以看作一组容器加上它们所共享的资源，包括网络，文件系统等。但一般不会直接操作 pod，pod 的管理都是通过一些控制器来实现的。pod 通常有以下两种用法：</p>
+<ul>
+<li><strong>运行单个容器的 Pod</strong>。&ldquo;每个 Pod 一个容器&rdquo; 模型是最常见的 Kubernetes 用例； 在这种情况下，可以将 Pod 看作单个容器的包装器，并且 Kubernetes 直接管理 Pod，而不是容器。</li>
+<li><strong>运行多个协同工作的容器的 Pod</strong>。 Pod 可能封装由多个紧密耦合且需要共享资源的共处容器组成的应用程序。 这些位于同一位置的容器可能形成单个内聚的服务单元</li>
+</ul>
+<p>pod 可以很轻松的横向扩展，创建出多个同等的 pod，这些同等的 pod 通常被称为<strong>副本（Replication）</strong></p>
+<h5 id="控制器">控制器<a hidden class="anchor" aria-hidden="true" href="#控制器">#</a></h5>
+<p>控制器是用来创建和管理多个 Pod，管理副本和上线，并在集群范围内提供自修复能力。</p>
+<p><strong>适用无状态服务</strong>：</p>
+<ul>
+<li>
+<p>ReplicationController（RC）：可以保证在任意时间运行 Pod 的副本数量，能够保证 Pod 总是可用的。（v1.11 弃用）</p>
+</li>
+<li>
+<p>ReplicaSet（RS）：和 RC 的作用是一样的，可以通过 selector 来选择对哪些 pod 生效。</p>
+</li>
+<li>
+<p><strong>Deployment：</strong> 对 RS 的更高层次封装，提供了一种声明性的方式来定义和管理 Pod 副本集的创建和更新过程。常见用途：</p>
+<ul>
+<li>应用部署</li>
+<li>应用滚动升级和回滚</li>
+<li>动态平滑扩缩容</li>
+<li>灰度发布</li>
+<li>健康检查与自愈</li>
+</ul>
+<p>Deployment 并不直接操作 pod，是通过 ReplicaSet 来间接操作 pod</p>
+</li>
+</ul>
+<p><strong>适用有状态服务</strong>：</p>
+<p><strong>StatefulSet</strong>：与 Deployment 类似，但会为 pod 维护稳定持久的状态</p>
+<p>特点：</p>
+<ul>
+<li>持久化存储：Pod 重新调度后还是能访问到相同的持久化数据，基于 PVC 来实现</li>
+<li>Pod 重新调度后其 PodName 和 HostName 不变，基于 Headless Service（即没有 Cluster IP 的 Service）来实现</li>
+<li>有序扩缩：扩缩容都是有序的</li>
+</ul>
+<p>注意事项：</p>
+<ul>
+<li>所有Pod的Volume必须使用PersistentVolume或者是管理员事先创建好</li>
+<li>删除StatefulSet时不会删除Volume</li>
+<li>StatefulSet 需要一个 Headless Service 来定义 DNS domain，需要在 StatefulSet 之前创建好</li>
+</ul>
+<p><strong>守护进程</strong>：</p>
+<p>DaemonSet：保证在每个 Node 上都运行一个 pod 副本。常见用法：</p>
+<ul>
+<li>在每个节点上运行集群守护进程</li>
+<li>在每个节点上运行日志收集守护进程</li>
+<li>在每个节点上运行监控守护进程</li>
+</ul>
+<p><strong>任务/定时任务</strong>：</p>
+<ul>
+<li>Job：一次性运行的任务，运行完后就删除 pod</li>
+<li>CronJob：定时的 Job</li>
+</ul>
+<h4 id="服务发现">服务发现<a hidden class="anchor" aria-hidden="true" href="#服务发现">#</a></h4>
+<h5 id="service">Service<a hidden class="anchor" aria-hidden="true" href="#service">#</a></h5>
+<p>Service API 是 Kubernetes 的组成部分，它是一种抽象，帮助你将 Pod 集合在网络上公开出去。 每个 Service 对象定义端点的一个逻辑集合（通常这些端点就是 Pod）以及如何访问到这些 Pod 的策略。</p>
+<p>通常用作集群内部的服务发现</p>
+<h5 id="ingress">Ingress<a hidden class="anchor" aria-hidden="true" href="#ingress">#</a></h5>
+<p>Ingress 是用于将外部流量路由到 Kubernetes 集群内部服务的 API 和资源对象。它充当了集群内部服务的入口点，并提供了流量路由、负载均衡和 TLS 终止等功能。</p>
+<p>ingress 需要配合 ingress controller 一起使用才能发挥作用，ingress 只是相当于路由规则的集合而已，真正实现路由功能的，是 Ingress Controller，ingress controller 和其它 k8s 组件一样，也是在 Pod 中运行。常用的 ingress controller 有 nginx、taefik 等</p>
+<h4 id="存储">存储<a hidden class="anchor" aria-hidden="true" href="#存储">#</a></h4>
+<h5 id="volume">Volume<a hidden class="anchor" aria-hidden="true" href="#volume">#</a></h5>
+<p>Volume 用于提供持久性和可共享的存储解决方案，以供Pod中的容器共享使用。Volume 可以被理解为容器中的一个目录或文件，可以在容器的生命周期内保持数据的持久性。</p>
+<h5 id="csi">CSI<a hidden class="anchor" aria-hidden="true" href="#csi">#</a></h5>
+<p>Container Storage Interface 是 k8s 中的存储标准接口规范，只要满足了这个接口的规范，都可以用来作为容器存储系统。</p>
+<h4 id="配置">配置<a hidden class="anchor" aria-hidden="true" href="#配置">#</a></h4>
+<h5 id="configmap">ConfigMap<a hidden class="anchor" aria-hidden="true" href="#configmap">#</a></h5>
+<p>用来放配置，与 Secret 是类似的，只是 ConfigMap 放的是明文的数据，Secret 是密文存放。</p>
+<h5 id="secret">Secret<a hidden class="anchor" aria-hidden="true" href="#secret">#</a></h5>
+<p>Secret 解决了密码、token、密钥等敏感数据的配置问题，而不需要把这些敏感数据暴露到镜像或者 Pod Spec 中。Secret 可以以 Volume 或者环境变量的方式使用。有以下三种类型：</p>
+<ul>
+<li>Service Account：用来访问 Kubernetes API，由 Kubernetes 自动创建，并且会自动挂载到 Pod 的 /run/secrets/kubernetes.io/serviceaccount 目录中；</li>
+<li>Opaque：base64 编码格式的 Secret，用来存储密码、密钥等；</li>
+<li>kubernetes.io/dockerconfigjson：用来存储私有 docker registry 的认证信息。</li>
+</ul>
+<h5 id="downwardapi">DownwardAPI<a hidden class="anchor" aria-hidden="true" href="#downwardapi">#</a></h5>
+<p>downwardAPI 是提供了一种直接将 pod 信息注入到容器里面的能力，通常有两种方式：</p>
+<ul>
+<li>
+<p>环境变量：用于单个变量，可以将 pod 信息和容器信息直接注入容器内部</p>
+</li>
+<li>
+<p>volume 挂载：将 pod 信息生成为文件，直接挂载到容器内部中去</p>
+</li>
+</ul>
+<h4 id="其他">其他<a hidden class="anchor" aria-hidden="true" href="#其他">#</a></h4>
+<h5 id="role">Role<a hidden class="anchor" aria-hidden="true" href="#role">#</a></h5>
+<p>Role 是一组权限的集合，例如 Role 可以包含列出 Pod 权限及列出 Deployment 权限，Role 用于给某个 Namespace 中的资源进行鉴权。</p>
+<h5 id="rolebinding">RoleBinding<a hidden class="anchor" aria-hidden="true" href="#rolebinding">#</a></h5>
+<p>将某一个资源绑定到 role 上，使其具备 role 所包含的权限</p>
+<h2 id="深入-pod">深入 Pod<a hidden class="anchor" aria-hidden="true" href="#深入-pod">#</a></h2>
+<h3 id="探针">探针<a hidden class="anchor" aria-hidden="true" href="#探针">#</a></h3>
+<p>Pod 探针（Probe）是用于检查和监视运行中的容器状态的一种机制。让 Kubernetes 知道容器是否正常工作，以及何时需要重新启动容器或将容器从服务负载均衡器中移除。</p>
+<h4 id="探测机制">探测机制<a hidden class="anchor" aria-hidden="true" href="#探测机制">#</a></h4>
+<h5 id="exec">exec<a hidden class="anchor" aria-hidden="true" href="#exec">#</a></h5>
+<p>在容器内执行指定命令。如果命令退出时返回码为 0 则认为诊断成功。</p>
+<h5 id="grpc">grpc<a hidden class="anchor" aria-hidden="true" href="#grpc">#</a></h5>
+<p>使用 <a href="https://grpc.io/">gRPC</a> 执行一个远程过程调用。 目标应该实现 <a href="https://grpc.io/grpc/core/md_doc_health-checking.html">gRPC 健康检查</a>。 如果响应的状态是 &ldquo;SERVING&rdquo;，则认为诊断成功。</p>
+<h5 id="httpget">httpGet<a hidden class="anchor" aria-hidden="true" href="#httpget">#</a></h5>
+<p>对容器的 IP 地址上指定端口和路径执行 HTTP <code>GET</code> 请求。如果响应的状态码大于等于 200 且小于 400，则诊断被认为是成功的。</p>
+<h5 id="tcpsocket">tcpSocket<a hidden class="anchor" aria-hidden="true" href="#tcpsocket">#</a></h5>
+<p>对容器的 IP 地址上的指定端口执行 TCP 检查。如果端口打开，则诊断被认为是成功的。 如果远程系统（容器）在打开连接后立即将其关闭，这算作是健康的。</p>
+<p><strong>注意：</strong> 和其他机制不同，<code>exec</code> 探针的实现涉及每次执行时创建/复制多个进程。 因此，在集群中具有较高 pod 密度、较低的 <code>initialDelaySeconds</code> 和 <code>periodSeconds</code> 时长的时候， 配置任何使用 exec 机制的探针可能会增加节点的 CPU 负载。 这种场景下，请考虑使用其他探针机制以避免额外的开销。</p>
+<h4 id="探测类型">探测类型<a hidden class="anchor" aria-hidden="true" href="#探测类型">#</a></h4>
+<h5 id="livenessprobe">livenessProbe<a hidden class="anchor" aria-hidden="true" href="#livenessprobe">#</a></h5>
+<p>指示容器是否正在运行。如果存活态探测失败，则 kubelet 会杀死容器， 并且容器将根据其<a href="https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy">重启策略</a>决定未来。如果容器不提供存活探针， 则默认状态为 <code>Success</code>。</p>
+<h5 id="readinessprobe">readinessProbe<a hidden class="anchor" aria-hidden="true" href="#readinessprobe">#</a></h5>
+<p>指示容器是否准备好为请求提供服务。如果就绪态探测失败， 端点控制器将从与 Pod 匹配的所有服务的端点列表中删除该 Pod 的 IP 地址。 初始延迟之前的就绪态的状态值默认为 <code>Failure</code>。 如果容器不提供就绪态探针，则默认状态为 <code>Success</code>。</p>
+<h5 id="startupprobe">startupProbe<a hidden class="anchor" aria-hidden="true" href="#startupprobe">#</a></h5>
+<p>指示容器中的应用是否已经启动。如果提供了启动探针，则所有其他探针都会被禁用，直到此探针成功为止。如果启动探测失败，<code>kubelet</code> 将杀死容器， 而容器依其<a href="https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy">重启策略</a>进行重启。 如果容器没有提供启动探测，则默认状态为 <code>Success</code>。</p>
+<h3 id="生命周期">生命周期<a hidden class="anchor" aria-hidden="true" href="#生命周期">#</a></h3>
+<h4 id="init-容器">init 容器<a hidden class="anchor" aria-hidden="true" href="#init-容器">#</a></h4>
+<p>init 容器是在 Pod 就绪前运行的特殊容器，在 sepc.initContainers 中设定，Pod 创建时按设定的顺序执行，不支持探针和 lifecycle。</p>
+<h4 id="容器回调">容器回调<a hidden class="anchor" aria-hidden="true" href="#容器回调">#</a></h4>
+<p><code>PostStart</code> 在容器被创建后就执行，不能保证其与 <code>ENTRYPOINT</code> 的执行顺序</p>
+<p><code>PreStop</code> 就是在 Pod 终止前容器会执行的一些行为。通常使用 <code>PreStop</code> 进行服务下线，数据清理，数据销毁等操作。</p>
+<p>有三种类型：</p>
+<ul>
+<li>exec：描述了<strong>在容器中运行</strong>的操作</li>
+<li>httpGet：由 kubelet 向容器发送 HTTP 请求</li>
+<li>tcpSocket：已经弃用</li>
+</ul>
+<p>使用 <code>.spec.containers.lifecycle</code> 配置</p>
+<h4 id="pod-退出流程">Pod 退出流程<a hidden class="anchor" aria-hidden="true" href="#pod-退出流程">#</a></h4>
+<ol>
+<li>Endpoint 删除 pod 的 ip</li>
+<li>Pod 变为 Terminating 状态：变为删除中的状态后，会给 pod 一个宽限期，让 pod 去执行一些清理或销毁操作。使用 <code>terminationGracePeriodSeconds</code> 控制，对 pod 中的所有容器起作用</li>
+<li>执行 PreStop</li>
+</ol>
+<h2 id="资源调度">资源调度<a hidden class="anchor" aria-hidden="true" href="#资源调度">#</a></h2>
+<h3 id="label-和-selector">Label 和 Selector<a hidden class="anchor" aria-hidden="true" href="#label-和-selector">#</a></h3>
+<p>lable 是一组<strong>描述资源元信息</strong>的键值对。创建方式：</p>
+<ul>
+<li>配置文件时标明：<code>metadata.labels</code></li>
+<li>临时创建或修改：<code>kubectl label {object} {objectName} {labelName}={labelValue} --overwrite</code>，临时创建的 label 在 deployment 的 template 改变后会丢失。</li>
+</ul>
+<p>selector 匹配的是 label 满足条件的资源，常见的操作符包括等于（<code>=</code>）、不等于（<code>!=</code>）、存在（<code>in</code>）、不存在（<code>notin</code>）等。</p>
+<p><strong>Deployment 的 selector 用于匹配 replicaSet，replicaSet 的 selector 用于匹配 pod。</strong></p>
+<h3 id="deployment">Deployment<a hidden class="anchor" aria-hidden="true" href="#deployment">#</a></h3>
+<p>deployment 通过绑定一个 replicaSet 来间接实现对 pod 的管理，并且在 replicaSet 的功能上还增加了滚动更新、回滚等高级功能</p>
+<p>不需要显示的创建 RS，创建 deployment 时会自动创建一个 RS 并与其绑定在一起。</p>
+<h4 id="滚动更新">滚动更新<a hidden class="anchor" aria-hidden="true" href="#滚动更新">#</a></h4>
+<p>仅当 Deployment Pod 模板（即 <code>.spec.template</code>）发生改变时，例如模板的标签或容器镜像被更新， 才会触发 Deployment 上线。其他更新（如对 Deployment 执行扩缩容的操作）不会触发上线动作。</p>
+<ul>
+<li>使用 <code>kubectl set </code> 命令更改 deloyment 中的 template，可以修改 image、env&hellip;</li>
+<li>通过 <code>kubectl edit deploy {deployName}</code> 直接修改配置文件中的 template</li>
+</ul>
+<p>使用 <code>kubectl rollout status deploy {deployName}</code> 查看滚动更新过程</p>
+<h5 id="多-deployment-动态更新">多 Deployment 动态更新<a hidden class="anchor" aria-hidden="true" href="#多-deployment-动态更新">#</a></h5>
+<p>当一个滚动更新没完成的时候，template 又变了，就会将上一次的更新直接舍弃，去执行新的滚动更新。</p>
+<h4 id="回滚">回滚<a hidden class="anchor" aria-hidden="true" href="#回滚">#</a></h4>
+<p>当一个 deployment 不稳定或根本跑不起来的时候，可以回滚到原来稳定的版本。</p>
+<p>使用 <code>kubectl rollout history deploy {deployName}</code> 来列出历史版本</p>
+<p>使用 <code>kubuctl rollout undo deploy {deployName}</code> 来回退到上一个版本，也可以在末尾加上 <code>--to-revision={desired}</code> 来指定回滚到哪一个版本</p>
+<p>通过设置 <code>.spec.revisonHistoryLimit</code> 来指定 deployment 保留多少 revison，如果设置为 0，则不允许 deployment 回退</p>
+<h4 id="扩缩容">扩缩容<a hidden class="anchor" aria-hidden="true" href="#扩缩容">#</a></h4>
+<ul>
+<li>
+<p>使用 <code>kubectl scale --replicas={desired} {object} {objectName}</code> 命令，deployment, replicaSet, replicaController, stateful Set 都可以使用这个命令来扩缩容</p>
+</li>
+<li>
+<p><code>kubectl edit </code> 编辑 replicas 的数量即可扩缩容</p>
+</li>
+<li>
+<p><code>kubectl patch</code> 命令就地更新</p>
+</li>
+</ul>
+<p>扩缩容时是直接创建或者删除副本，<strong>pod template 没有发生改变，不会触发更新</strong></p>
+<h4 id="暂停与恢复">暂停与恢复<a hidden class="anchor" aria-hidden="true" href="#暂停与恢复">#</a></h4>
+<p>只要 pod template 一发生变更，就会触发 deployment 的更新，但是只有最后一个状态才是想要的，中途触发的更新都是没没必要的。</p>
+<p>使用 <code>kubectl rollout pause deploy {deployName}</code> 来暂时停止自动更新，更改完成后使用 <code>kubectl rollout resume deploy {deploName} </code> 来恢复暂停的 deployment。</p>
+<h3 id="statefulset">StatefulSet<a hidden class="anchor" aria-hidden="true" href="#statefulset">#</a></h3>
+<p>statefulSet 作业与 deployment 类似，但通常用于管理有状态的应用，通常用于需要满足以下情况的应用：</p>
+<ul>
+<li><strong>稳定的、唯一的网络标识符</strong>: <code>StatefulSet</code> 确保每个 Pod 的名称按照指定的名称基础和序号顺序分配，并在重新部署、调度到新节点或者其他任何操作中保持不变。</li>
+<li><strong>稳定的、持久的存储</strong>: 即使 <code>StatefulSet</code> 中的 Pod 被重新调度，它们也能够保持对存储卷的访问。每个 Pod 都会被分配一个与 Pod 名称相对应的持久存储卷（PersistentVolume），这意味着即使 Pod 被删除，相同身份的新 Pod 也能重新挂载同一个存储卷。</li>
+<li><strong>有序的、优雅的部署和扩展</strong>: <code>StatefulSet</code> 中的 Pods 是按顺序创建和删除的；在创建下一个 Pod 前，上一个必须是运行且就绪的。这适用于扩展和缩容操作。这种有序性对于一些依赖于严格启动和关闭顺序的系统来说非常重要，比如分布式数据存储。</li>
+<li><strong>有序的、优雅的删除和终止</strong>: 当 Pods 被删除时，它们的终止也是有序的，并且遵循相反的顺序。这确保了在关闭时不会破坏应用程序的一致性和稳定性。</li>
+</ul>
+<h4 id="dns">DNS<a hidden class="anchor" aria-hidden="true" href="#dns">#</a></h4>
+<p>StatefulSet 中每个 Pod 的 DNS 格式为 statefulSetName-{0..N-1}.serviceName.namespace.svc.cluster.local</p>
+<ul>
+<li>serviceName 为 Headless Service 的名字</li>
+<li>0..N-1 为 Pod 所在的序号，从 0 开始到 N-1</li>
+<li>statefulSetName 为 StatefulSet 的名字</li>
+<li>namespace 为服务所在的 namespace，Headless Servic 和 StatefulSet 必须在相同的 namespace</li>
+<li>.cluster.local 为 Cluster Domain</li>
+</ul>
+<h4 id="扩缩容-1">扩缩容<a hidden class="anchor" aria-hidden="true" href="#扩缩容-1">#</a></h4>
+<ul>
+<li>
+<p>使用 <code>kubectl scale --replicas={desired} {object} {objectName}</code> 命令，deployment, replicaSet, replicaController, stateful Set 都可以使用这个命令来扩缩容</p>
+</li>
+<li>
+<p><code>kubectl edit </code> 编辑 replicas 的数量即可扩缩容</p>
+</li>
+<li>
+<p><code>kubectl patch</code> 命令就地更新</p>
+</li>
+</ul>
+<p>statefulSet 的扩缩容是有序的，如从 0 ～ 4 创建，那么缩容时是 4 ～ 0</p>
+<h4 id="更新">更新<a hidden class="anchor" aria-hidden="true" href="#更新">#</a></h4>
+<p>StatefulSet 的 <code>.spec.updateStrategy</code> 字段让你可以配置和禁用掉自动滚动更新 Pod 的容器、标签、资源请求或限制、以及注解。有两个允许的值：</p>
+<ul>
+<li>
+<p><code>OnDelete</code></p>
+<p>当 StatefulSet 的 <code>.spec.updateStrategy.type</code> 设置为 <code>OnDelete</code> 时， 控制器将不会自动更新 StatefulSet 中的 Pod。 必须手动删除 Pod 以便让控制器创建新的 Pod，以此来对 StatefulSet 的 <code>.spec.template</code> 的变动作出反应。<strong>只有在 pod 被删除时会进行更新操作</strong></p>
+</li>
+<li>
+<p><code>RollingUpdate</code></p>
+<p><code>RollingUpdate</code> 更新策略对 StatefulSet 中的 Pod 执行自动的滚动更新。这是默认的更新策略。<strong>只有当 pod 的 template 发生改变时才会触发</strong></p>
+</li>
+</ul>
+<p>在 StatefulSet 中更新时是基于 pod 的顺序倒序更新的</p>
+<h5 id="灰度发布">灰度发布<a hidden class="anchor" aria-hidden="true" href="#灰度发布">#</a></h5>
+<p>利用滚动更新中的 partition 属性，可以实现简易的灰度发布的效果</p>
+<p>例如我们有 5 个 pod，如果当前 partition 设置为 3，那么此时滚动更新时，只会更新那些 序号 &gt;= 3 的 pod</p>
+<p>利用该机制，我们可以通过控制 partition 的值，来决定只更新其中一部分 pod，确认没有问题后再主键增大更新的 pod 数量，最终实现全部 pod 更新</p>
+<h4 id="删除">删除<a hidden class="anchor" aria-hidden="true" href="#删除">#</a></h4>
+<p>删除 StatefulSet 和 Headless Service</p>
+<p>**级联删除：**删除 statefulset 时会同时删除 pods</p>
+<p><code>kubectl delete sts {stsName}</code></p>
+<p>**非级联删除：**删除 statefulset 时不会删除 pods，删除 sts 后，pods 就没人管了，此时再删除 pod 不会重建的</p>
+<p><code>kubectl deelte sts {stsName} --cascade=false</code></p>
+<p>删除 service
+<code>kubectl delete svc {svcName}</code></p>
+<p>删除 pvc</p>
+<p><code>kubectl delete pvc {pvcName}</code></p>
+<h3 id="daemonset">DaemonSet<a hidden class="anchor" aria-hidden="true" href="#daemonset">#</a></h3>
+<p>为每一个匹配的 node 部署一个守护进程，一种简单的用法是为每种类型的守护进程在所有的节点上都启动一个 DaemonSet。 一个稍微复杂的用法是为同一种守护进程部署多个 DaemonSet；每个具有不同的标志， 并且对不同硬件类型具有不同的内存、CPU 要求。</p>
+<p>建议将更新模式设置为 OnDelete</p>
+<h4 id="指定节点运行">指定节点运行<a hidden class="anchor" aria-hidden="true" href="#指定节点运行">#</a></h4>
+<p>使用 <code>.spec.template.spec.nodeSelector</code> 指定节点</p>
+<h3 id="hpa-自动扩缩容">HPA 自动扩缩容<a hidden class="anchor" aria-hidden="true" href="#hpa-自动扩缩容">#</a></h3>
+<p>HPA 通过观察 pod 的 cpu、内存使用率或自定义 metrics 指标进行自动的扩容或缩容 pod 的数量。</p>
+<p>通常用于 Deployment，不适用于无法扩/缩容的对象，如 DaemonSet</p>
+<p>控制管理器每隔30s（可以通过–horizontal-pod-autoscaler-sync-period修改）查询metrics的资源使用情况</p>
+<h4 id="cpumemory-指标监控">CPU\Memory 指标监控<a hidden class="anchor" aria-hidden="true" href="#cpumemory-指标监控">#</a></h4>
+<p>直接使用 <code>kubectl autoscale {object} {objectName} --cpu-percent=20 --min=2 --max=5</code> 就可以创建一个 HPA，cpu-percent 指扩缩容的阈值，max, min 分别代表副本数的最大与最小值</p>
+<h4 id="自定义指标">自定义指标<a hidden class="anchor" aria-hidden="true" href="#自定义指标">#</a></h4>
+<ul>
+<li>控制管理器开启 –horizontal-pod-autoscaler-use-rest-clients</li>
+<li>控制管理器的 –apiserver 指向 <a href="https://github.com/kubernetes/kube-aggregator">API Server Aggregator</a></li>
+<li>在 API Server Aggregator 中注册自定义的 metrics API</li>
+</ul>
+<h3 id="job-和-cronjob">Job 和 CronJob<a hidden class="anchor" aria-hidden="true" href="#job-和-cronjob">#</a></h3>
+<p>Job 只执行一次，CronJob 是定时任务，基于 <code>crontab</code> 实现</p>
+<h3 id="initcontainer">InitContainer<a hidden class="anchor" aria-hidden="true" href="#initcontainer">#</a></h3>
+<p>Init 容器是一种特殊容器，在 <a href="https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/">Pod</a> 内的应用容器启动之前运行。Init 容器可以包括一些应用镜像中不存在的实用工具和安装脚本。</p>
+<ul>
+<li>它们总是运行到完成。</li>
+<li>每个都必须在下一个启动之前成功完成。</li>
+</ul>
+<p>如果 Pod 的 Init 容器失败，kubelet 会不断地重启该 Init 容器直到该容器成功为止。 然而，如果 Pod 对应的 <code>restartPolicy</code> 值为 &ldquo;Never&rdquo;，并且 Pod 的 Init 容器失败， 则 Kubernetes 会将整个 Pod 状态设置为失败。</p>
+<h3 id="污点和容忍">污点和容忍<a hidden class="anchor" aria-hidden="true" href="#污点和容忍">#</a></h3>
+<p>污点是应用在节点上的属性，容忍度是 pod 的属性。污点和容忍度相互配合，可以用来避免 Pod 被分配到不合适的节点上。 每个节点上都可以应用一个或多个污点，这表示对于那些不能容忍这些污点的 Pod， 是不会被该节点接受的。</p>
+<p>使用 <code>kubectl taint no noName {key}={value}:{effect}</code> 为节点打污点，再末尾加个 <code>-</code> 就可以移除污点</p>
+<p>污点的影响：</p>
+<ul>
+<li>NoSchedule：不能容忍的 pod 不能被调度到该节点，但是已经存在的节点不会被驱逐</li>
+<li>NoExecute：不能容忍的节点会被立即清除；能容忍且没有配置 <strong>tolerationSeconds</strong> 属性，则可以一直运行；设置了 <strong>tolerationSeconds</strong>: 3600 属性，则该 pod 还能继续在该节点运行 3600 秒</li>
+</ul>
+<p>容忍就是在 pod spec 下配置 tolerances，需要与节点污点的键值对及影响相匹配，有两种匹配类型</p>
+<ul>
+<li>Equal：要求 k-v 都必须相同才表示能容忍此污点</li>
+<li>Exist：只比较 k 不关心 v，只要 k 存在就可以容忍</li>
+</ul>
+<h3 id="亲和性">亲和性<a hidden class="anchor" aria-hidden="true" href="#亲和性">#</a></h3>
+<p>nodeSelector 只能选择拥有指定标签的节点，亲和性和反亲和性提供了逻辑上更细粒度的控制。</p>
+<h4 id="节点亲和性">节点亲和性<a hidden class="anchor" aria-hidden="true" href="#节点亲和性">#</a></h4>
+<p>节点亲和性是为 pod 匹配 nod</p>
+<ul>
+<li><code>requiredDuringSchedulingIgnoredDuringExecution</code>： 调度器只有在规则被满足的时候才能执行调度。此功能类似于 <code>nodeSelector</code>， 但其语法表达能力更强。</li>
+<li><code>preferredDuringSchedulingIgnoredDuringExecution</code>： 调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod。</li>
+</ul>
+<h4 id="pod-亲和性和反亲和性">Pod 亲和性和反亲和性<a hidden class="anchor" aria-hidden="true" href="#pod-亲和性和反亲和性">#</a></h4>
+<p>pod 亲和性和反亲和性用于 pod 与 pod 之间调度的关系。Pod 的亲和性与反亲和性也有两种类型：</p>
+<ul>
+<li><code>requiredDuringSchedulingIgnoredDuringExecution</code></li>
+<li><code>preferredDuringSchedulingIgnoredDuringExecution</code></li>
+</ul>
+<p>例如，使用 <code>requiredDuringSchedulingIgnoredDuringExecution</code> 亲和性来告诉调度器， 将两个服务的 Pod 放到同一个云提供商可用区内，因为它们彼此之间通信非常频繁。 类似地，使用 <code>preferredDuringSchedulingIgnoredDuringExecution</code> 反亲和性来将同一服务的多个 Pod 分布到多个云提供商可用区中。</p>
+<p>要使用 Pod 间亲和性，可以使用 Pod 规约中的 <code>.affinity.podAffinity</code> 字段。 对于 Pod 间反亲和性，可以使用 Pod 规约中的 <code>.affinity.podAntiAffinity</code> 字段。</p>
+<h2 id="服务发布">服务发布<a hidden class="anchor" aria-hidden="true" href="#服务发布">#</a></h2>
+<p>service、ingress 和 Gateway API 都可以用于服务发布，service 通常用于集群内部的通信，ingress 和 Gateway API 通常用于对集群外暴露服务。</p>
+<h3 id="service-1">Service<a hidden class="anchor" aria-hidden="true" href="#service-1">#</a></h3>
+<p>每当 service 被创建时，endpoint controller 都会创建一个与其绑定的 endpoints，endpoints 包含了所有与 service 选择器匹配到 ip 和端口。然后 endpoint controller 监视 pod 来动态的更新 service 和 endpoints。</p>
+<h4 id="路由过程">路由过程<a hidden class="anchor" aria-hidden="true" href="#路由过程">#</a></h4>
+<ol>
+<li><strong>DNS 解析</strong>: 集群内部的组件（比如一个 <code>Pod</code>）使用 <code>Service</code> 的名称来访问服务，该名称通过集群的 DNS 服务（比如 CoreDNS）解析为 <code>ClusterIP</code>。</li>
+<li><strong>到达 <code>kube-proxy</code></strong>: 发往 <code>ClusterIP</code> 的流量到达节点上运行的 <code>kube-proxy</code>。根据 <code>kube-proxy</code> 的工作模式（如 <code>iptables</code>、<code>ipvs</code> 或用户空间模式），它会处理流量的转发。</li>
+<li><strong>网络规则处理</strong>:
+<ul>
+<li>在 <code>iptables</code> 模式下，<code>kube-proxy</code> 为每个 <code>Service</code> 配置 <code>iptables</code> 规则。当流量到达 <code>ClusterIP</code> 时，这些规则会被用来选择一个后端 <code>Pod</code> 并将流量转发到那里。</li>
+<li>在 <code>ipvs</code> 模式下，<code>kube-proxy</code> 使用 IP 虚拟服务器（IPVS）来转发流量，这种方式通常提供更好的性能。</li>
+</ul>
+</li>
+<li><strong>选择后端 Pod</strong>: <code>kube-proxy</code> 根据 <code>Service</code> 的 <code>Endpoints</code> 对象（包含所有匹配 <code>Service</code> 选择器的 <code>Pod</code> 的 IP 地址）来选择一个后端 <code>Pod</code>。如果配置了负载均衡（如轮询），则 <code>kube-proxy</code> 会相应地选择一个 <code>Pod</code>。</li>
+<li><strong>流量转发到 Pod</strong>: <code>kube-proxy</code> 将流量转发到选定的 <code>Pod</code>。如果 <code>Pod</code> 位于不同的节点上，流量将被路由到该节点，并最终到达目标 <code>Pod</code>。</li>
+</ol>
+<p><strong>重点：</strong></p>
+<ul>
+<li><code>ClusterIP</code> 为服务提供了一个稳定的内部 IP 地址，无需关心后端 <code>Pod</code> 的实际位置。</li>
+<li><code>kube-proxy</code> 负责在节点层面上实现 <code>Service</code> 定义的流量路由机制。</li>
+<li>流量管理和负载均衡是透明的，对于使用服务的 <code>Pod</code> 来说，它们只是简单地向 <code>Service</code> 的 <code>ClusterIP</code> 发送请求。</li>
+</ul>
+<h4 id="类型">类型<a hidden class="anchor" aria-hidden="true" href="#类型">#</a></h4>
+<h5 id="clusterip">ClusterIP<a hidden class="anchor" aria-hidden="true" href="#clusterip">#</a></h5>
+<ul>
+<li><strong>特点</strong>:
+<ul>
+<li>提供一个内部的 IP 地址来访问服务，只能在集群内部访问。</li>
+<li><code>kube-proxy</code> 使用 <code>iptables</code> 或 <code>ipvs</code> 路由到实际的 <code>Pods</code>。</li>
+<li>默认的 <code>Service</code> 类型。</li>
+</ul>
+</li>
+<li><strong>应用场景</strong>:
+<ul>
+<li>当你需要在 Kubernetes 集群内部让 <code>Pods</code> 之间通信时使用。</li>
+<li>适用于不需要从集群外部访问的服务，例如内部数据库或后端服务。</li>
+</ul>
+</li>
+<li><strong>访问方式：</strong>
+<ul>
+<li>在集群内部的任何 Pod 里，使用 <code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code> 的 DNS 名称来访问 Service。如果 Service 和 Pod 在同一个命名空间中，可以省略命名空间和域后缀，直接使用 <code>&lt;service-name&gt;</code>。</li>
+</ul>
+</li>
+</ul>
+<h5 id="nodeport">NodePort<a hidden class="anchor" aria-hidden="true" href="#nodeport">#</a></h5>
+<ul>
+<li><strong>特点</strong>:
+<ul>
+<li>在集群的每个节点上开放一个端口（NodePort），将该端口路由到 <code>Service</code>。</li>
+<li>外部流量可以通过 <code>&lt;NodeIP&gt;:&lt;NodePort&gt;</code> 访问服务。</li>
+<li>NodePort 范围通常在 <strong>30000-32767</strong>。</li>
+</ul>
+</li>
+<li><strong>应用场景</strong>:
+<ul>
+<li>当你需要从集群外部访问服务时使用，例如一个公共的 Web 应用。</li>
+<li>常用于开发和测试环境，以便于访问集群内的服务。不推荐生产环境使用。</li>
+</ul>
+</li>
+<li><strong>访问方式：</strong>
+<ul>
+<li>从集群外部，	使用 <code>&lt;node-ip&gt;:&lt;node-port&gt;</code> 来访问 Service，其中 <code>&lt;node-ip&gt;</code> 是集群中任何一个节点的 IP 地址，<code>&lt;node-port&gt;</code> 是 Service 定义中指定的 NodePort。</li>
+</ul>
+</li>
+</ul>
+<h5 id="loadbalancer">LoadBalancer<a hidden class="anchor" aria-hidden="true" href="#loadbalancer">#</a></h5>
+<ul>
+<li><strong>特点</strong>:
+<ul>
+<li>集成外部的云提供商负载均衡器。</li>
+<li>自动为服务分配外部可访问的公共 IP 地址。</li>
+<li>在后端自动配置节点上的 NodePort 和路由规则。</li>
+</ul>
+</li>
+<li><strong>应用场景</strong>:
+<ul>
+<li>适用于需要从互联网或外部网络直接访问的服务。</li>
+<li>常用于生产环境，特别是在云平台上运行的 Kubernetes 集群。</li>
+</ul>
+</li>
+<li><strong>访问方式：</strong>
+<ul>
+<li>Service 会被分配一个外部 IP 地址。你可以直接使用这个外部 IP 地址来访问 Service。</li>
+</ul>
+</li>
+</ul>
+<h5 id="externalname">ExternalName<a hidden class="anchor" aria-hidden="true" href="#externalname">#</a></h5>
+<ul>
+<li><strong>特点</strong>:
+<ul>
+<li>通过返回一个名字（而不是 IP 地址）来映射服务。</li>
+<li>不使用代理或转发，仅作为 DNS 的别名。</li>
+<li><code>spec.externalName</code> 字段指定返回的名称。</li>
+</ul>
+</li>
+<li><strong>应用场景</strong>:
+<ul>
+<li>当你需要通过 Kubernetes 服务访问外部服务时使用，例如引用集群外部的 REST 服务或数据库。</li>
+<li>对于将传统服务迁移到 Kubernetes 环境时作为中间步骤。</li>
+</ul>
+</li>
+</ul>
+<h5 id="headless-service">Headless Service<a hidden class="anchor" aria-hidden="true" href="#headless-service">#</a></h5>
+<ul>
+<li><strong>特点</strong>:
+<ul>
+<li>没有 <code>ClusterIP</code>，DNS 查询会返回 <code>Pods</code> 的直接 IP 地址。</li>
+<li>通过将 <code>spec.clusterIP</code> 设置为 <code>&quot;None&quot;</code> 来创建。</li>
+</ul>
+</li>
+<li><strong>应用场景</strong>:
+<ul>
+<li>当你不需要负载均衡和单一服务 IP，而是需要直接访问每个 <code>Pod</code> 时使用。</li>
+<li>常用于需要直接与 <code>Pods</code> 通信的服务发现机制，例如分布式数据库（如 Cassandra 或 Elasticsearch）。</li>
+</ul>
+</li>
+</ul>
+<h4 id="访问集群外部服务">访问集群外部服务<a hidden class="anchor" aria-hidden="true" href="#访问集群外部服务">#</a></h4>
+<p>两种解决方案</p>
+<h5 id="手动创建并维护-endpoints">手动创建并维护 Endpoints<a hidden class="anchor" aria-hidden="true" href="#手动创建并维护-endpoints">#</a></h5>
+<p>在创建 service 时不指定 selector，然后创建并维护一个 endpoints 与 service 绑定在一起。</p>
+<p>使用场景和优势：</p>
+<ul>
+<li>当需要将服务路由到特定的外部 IP 地址（而不是 DNS 名称）时。</li>
+<li>提供了对负载均衡和健康检查等更细粒度控制的可能性。</li>
+<li>适用于更复杂的网络场景，比如当外部服务有多个端点或特定的网络要求时。</li>
+</ul>
+<p>注意事项：</p>
+<ul>
+<li>需要手动维护和更新 <code>Endpoints</code>，特别是当外部服务的 IP 地址发生变化时。</li>
+<li>这种方法相对更复杂，需要更多的手动配置。</li>
+</ul>
+<h5 id="使用-externalname">使用 ExternalName<a hidden class="anchor" aria-hidden="true" href="#使用-externalname">#</a></h5>
+<p>将服务映射到外部的 DNS 名称，不会代理流量，而是依赖于 DNS 解析来指向外部服务。</p>
+<p>使用场景和优势</p>
+<ul>
+<li>当需要将服务映射到外部 DNS 名称时使用。</li>
+<li>简单易用，无需手动维护 <code>Endpoints</code>。</li>
+<li>适用于不需要复杂网络配置的场景，例如，当外部服务有一个稳定的 DNS 名称。</li>
+</ul>
+<p>注意事项</p>
+<ul>
+<li>
+<p>不支持 IP 地址，只能使用 DNS 名称。</p>
+</li>
+<li>
+<p>不会实现任何形式的负载均衡或健康检查。</p>
+</li>
+</ul>
+<h3 id="ingress-1">Ingress<a hidden class="anchor" aria-hidden="true" href="#ingress-1">#</a></h3>
+<p>Ingress 需要 ingress 和 ingress controlle 一起才能起作用，常用的 ingress controller 有 nginx、traefik、kong 等。</p>
+<p>ingress 可通常用于管理对 HTTP 和 HTTPS 流量的访问，包括 URL 路由、重定向、TLS/SSL 终端和其他。</p>
+<ol>
+<li><strong>Ingress 资源定义</strong>:
+<ul>
+<li>定义一个 Ingress 资源，指定外部请求如何路由到集群内的服务。</li>
+<li>例如，基于不同的主机名或路径将流量路由到不同的服务。</li>
+</ul>
+</li>
+<li><strong>Ingress controller 的作用</strong>:
+<ul>
+<li>Ingress 控制器监视 Kubernetes API 中的 Ingress 资源。</li>
+<li>当 Ingress 资源被创建或更新时，控制器读取配置并更新其内部路由表，以便正确地转发外部请求。</li>
+</ul>
+</li>
+</ol>
+<h4 id="流量链路">流量链路<a hidden class="anchor" aria-hidden="true" href="#流量链路">#</a></h4>
+<ol>
+<li><strong>外部请求</strong>:
+<ul>
+<li>用户从外部发起 HTTP/HTTPS 请求，例如通过浏览器或其他客户端。</li>
+</ul>
+</li>
+<li><strong>DNS 解析</strong>:
+<ul>
+<li>请求中的域名通过 DNS 解析为指向 Ingress 控制器的 IP 地址。</li>
+</ul>
+</li>
+<li><strong>到达 Ingress 控制器</strong>:
+<ul>
+<li>请求到达托管 Ingress 控制器的节点。这通常是通过云提供商的负载均衡器或者直接暴露的节点端口实现的。</li>
+</ul>
+</li>
+<li><strong>Ingress 控制器处理请求</strong>:
+<ul>
+<li>Ingress 控制器根据其路由规则（根据请求的主机名、路径等）确定请求应该路由到哪个服务。</li>
+</ul>
+</li>
+<li><strong>转发到后端服务</strong>:
+<ul>
+<li>Ingress 控制器将请求转发到集群内相应的 <code>Service</code>。</li>
+</ul>
+</li>
+<li><strong>Service 的负载均衡</strong>:
+<ul>
+<li><code>Service</code> 根据其负载均衡规则将请求路由到后端的一个或多个 <code>Pods</code>。</li>
+</ul>
+</li>
+<li><strong>处理请求</strong>:
+<ul>
+<li><code>Pod</code> 接收请求，处理并返回响应。</li>
+</ul>
+</li>
+<li><strong>响应返回给用户</strong>:
+<ul>
+<li>响应通过同样的路径返回给用户，完成请求的往返。</li>
+</ul>
+</li>
+</ol>
+<h3 id="gateway-api">Gateway API<a hidden class="anchor" aria-hidden="true" href="#gateway-api">#</a></h3>
+<h2 id="配置-1">配置<a hidden class="anchor" aria-hidden="true" href="#配置-1">#</a></h2>
+<h3 id="configmap-1">ConfigMap<a hidden class="anchor" aria-hidden="true" href="#configmap-1">#</a></h3>
+<p>configMap 可以看做一个明文的键值对</p>
+<p>直接使用 <code>kubectl create cm -h</code> 查看创建示例与 flag 说明</p>
+<p>常用命令：</p>
+<ul>
+<li><code>kubectl create cm {cmName} --from-file=/xxx/xxx/</code>：读取某一文件夹或文件来创建 configMap</li>
+<li><code>kubectl create cm {cmNmae} --from-file=key=/xxx/xxx</code>：读取某一个具体的文件并命名为 key 来创建 configMap</li>
+<li><code>kubectl create cm {cmName} --from-literal=key1=config1 --from-literal=key2=config2</code>：根据 key-value 创建 configMap</li>
+</ul>
+<h4 id="常见用法">常见用法<a hidden class="anchor" aria-hidden="true" href="#常见用法">#</a></h4>
+<ul>
+<li>在 Pod template 中设置 <code>.spec.containers.env</code> 时使用 <code>valueFrom.configMapKeyRef</code> ，指定想要的 configMap</li>
+<li>在 Pod template 中使用类型为 configMap 的 volume 并挂载到容器中</li>
+</ul>
+<h3 id="secret-1">Secret<a hidden class="anchor" aria-hidden="true" href="#secret-1">#</a></h3>
+<p>secret 对键值对有一个加密的处理，如果要加密的字符中，包含了有特殊字符，需要使用转义符转移，例如 $ 转移后为 $，也可以对特殊字符使用单引号描述。</p>
+<p>默认情况下 secrete 是<strong>未加密的</strong>存储在 etcd 里，仅仅做了一个 base64 编码操作</p>
+<p>一般有三种类型的 secrete：</p>
+<ul>
+<li>
+<p>docker-registry：使用得最多，数据存储格式为 base64 编码后的 json，在 Pod template 中设置 <code>.spec.imagePullSecrets.name</code> 即可使用创建的 secret</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">kubectl create secret docker-registry NAME --docker-username<span class="o">=</span>user --docker-password<span class="o">=</span>password
+</span></span><span class="line"><span class="cl">--docker-email<span class="o">=</span>email <span class="o">[</span>--docker-server<span class="o">=</span>string<span class="o">]</span> <span class="o">[</span>--from-file<span class="o">=[</span><span class="nv">key</span><span class="o">=]</span>source<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>--dry-run<span class="o">=</span>server<span class="p">|</span>client<span class="p">|</span>none<span class="o">]</span> <span class="o">[</span>options<span class="o">]</span>
+</span></span></code></pre></div></li>
+<li>
+<p>generic：和 configMap 很相似</p>
+</li>
+<li>
+<p>tls</p>
+</li>
+</ul>
+<h3 id="目录覆盖">目录覆盖<a hidden class="anchor" aria-hidden="true" href="#目录覆盖">#</a></h3>
+<p>使用 ConfigMap 或 Secret 挂载到目录的时候，会将容器中源目录给覆盖掉，此时我们可能只想覆盖目录中的某一个文件，但是这样的操作会覆盖整个文件，因此需要使用到 <strong>SubPath</strong></p>
+<p>配置方式：</p>
+<ol>
+<li>定义 volumes 时需要增加 items 属性，配置 key 和 path，且 path 的值不能从 / 开始</li>
+<li>在容器内的 volumeMounts 中增加 subPath 属性，该值与 volumes 中 items.path 的值相同</li>
+</ol>
+<h3 id="修改配置">修改配置<a hidden class="anchor" aria-hidden="true" href="#修改配置">#</a></h3>
+<ul>
+<li>使用 edit 命令直接修改</li>
+<li>使用 replace 命令修改：<code>kubectl create cm --from-file=xxx --dry-run -o yaml | kubectl replace -f-</code> 因为 <code>--dry-run</code> 命令只会打印 yaml，不会创建对象，所以得到了 yaml 后再使用 replace 即可</li>
+</ul>
+<p>对于一些敏感服务的配置文件，在线上有时是<strong>不允许修改</strong>的，此时在配置 configmap 时可以<strong>设置 immutable: true 来禁止修改</strong></p>
+<h3 id="热加载">热加载<a hidden class="anchor" aria-hidden="true" href="#热加载">#</a></h3>
+<p>更新 configmap 中的配置，pod 中的更新策略：</p>
+<ul>
+<li>默认方式：会更新，更新周期是更新时间 + 缓存时间</li>
+<li>subPath：不会更新</li>
+<li>变量形式：如果 pod 中的一个变量是从 configmap 或 secret 中得到，同样也是不会更新的</li>
+</ul>
+<p>对于 subPath 的方式，可以取消 subPath 的使用，将配置文件挂载到一个不存在的目录，避免目录的覆盖，然后再利用软连接的形式，将该文件链接到目标位置</p>
+<h3 id="downward-api">Downward API<a hidden class="anchor" aria-hidden="true" href="#downward-api">#</a></h3>
+<p><strong>Downward API</strong> 允许容器在不使用 Kubernetes 客户端或 API 服务器的情况下获得自己或集群的信息。</p>
+<h2 id="存储-1">存储<a hidden class="anchor" aria-hidden="true" href="#存储-1">#</a></h2>
+<p>列出常见存储</p>
+<h3 id="volumes">Volumes<a hidden class="anchor" aria-hidden="true" href="#volumes">#</a></h3>
+<p>volumes 主要解决两个问题：</p>
+<ul>
+<li>存储持久化</li>
+<li>跨容器共享文件</li>
+</ul>
+<h4 id="hostpath">HostPath<a hidden class="anchor" aria-hidden="true" href="#hostpath">#</a></h4>
+<p>hostPath 将节点上的文件或目录挂载到 Pod 上，此时该目录会变成<strong>持久化存储目录</strong>，即使 Pod 被删除后重启，也可以重新加载到该目录，该目录下的文件不会丢失</p>
+<h4 id="emptydir">EmptyDir<a hidden class="anchor" aria-hidden="true" href="#emptydir">#</a></h4>
+<p>EmptyDir 主要用于一个 Pod 中不同的 Container <strong>共享数据</strong>使用的，由于只是在 Pod 内部使用，因此与其他 volume 比较大的区别是，当 Pod 如果被删除了，那么 emptyDir 也会被删除。</p>
+<p>存储介质可以是任意类型，如 SSD、磁盘或网络存储。可以将 emptyDir.medium 设置为 Memory 让 k8s 使用 tmpfs（内存支持文件系统），速度比较快，但是重启 tmpfs 节点时，数据会被清除，且设置的大小会计入到 Container 的内存限制中。</p>
+<p><code>emptyDir</code> 的一些用途：</p>
+<ul>
+<li>缓存空间，例如基于磁盘的归并排序。</li>
+<li>为耗时较长的计算任务提供检查点，以便任务能方便地从崩溃前状态恢复执行。</li>
+<li>在 Web 服务器容器服务数据时，保存内容管理器容器获取的文件。</li>
+</ul>
+<h3 id="nfs">NFS<a hidden class="anchor" aria-hidden="true" href="#nfs">#</a></h3>
+<p>nfs 卷能将 NFS (网络文件系统) 挂载到你的 Pod 中。 不像 emptyDir 那样会在删除 Pod 的同时也会被删除，nfs 卷的内容在删除 Pod 时会被保存，卷只是被卸载。 这意味着 nfs 卷可以被预先填充数据，并且这些数据可以在 Pod 之间共享。</p>
+<p>效率较低，不适用于频繁读写的场景。</p>
+<h3 id="pv-与-pvc">PV 与 PVC<a hidden class="anchor" aria-hidden="true" href="#pv-与-pvc">#</a></h3>
+<p>PV 是对持久化存储的一个抽象，对于 Pod 来说，屏蔽了底层存储的细节，仅对其提供存储资源（存储资源实际是由磁盘、nfs等提供的，但对于 Pod 来说就是 PV 提供的）。具有独立的生命周期，与 Pod 无关。</p>
+<p>每一个 Pod 中就通过 PVC 去申请 PV 的资源。</p>
+<p><strong>CSI 是一个标准化的接口</strong>，旨在使存储提供商（如云供应商和存储硬件供应商）能够更容易地为 Kubernetes 提供存储解决方案，而无需每次都对 Kubernetes 本身进行修改或更新。任何实现了容器存储接口（Container Storage Interface，CSI）规范的存储系统都可以为 Kubernetes 提供持久卷（Persistent Volume，PV）资源。</p>
+<h4 id="构建">构建<a hidden class="anchor" aria-hidden="true" href="#构建">#</a></h4>
+<ul>
+<li>静态构建：集群管理员创建若干 PV 卷。这些卷对象带有真实存储的细节信息， 并且对集群用户可用（可见）。PV 卷对象存在于 Kubernetes API 中，可供用户消费（使用）。</li>
+<li>动态构建：如果 PV 已经不足以满足 PVC 的需求，可以<strong>通过 StorageClass</strong> 动态构建新的 PV</li>
+</ul>
+<h4 id="绑定">绑定<a hidden class="anchor" aria-hidden="true" href="#绑定">#</a></h4>
+<p>当用户创建一个 PVC 对象后，主节点会监测新的 PVC 对象，并且寻找与之匹配的 PV 卷，找到 PV 卷后将二者绑定在一起。</p>
+<p>如果找不到对应的 PV，则需要看 PVC 是否设置 StorageClass 来决定是否动态创建 PV，若没有配置，PVC 就会一致处于未绑定状态，直到有与之匹配的 PV 后才会申领绑定关系。</p>
+<h4 id="使用">使用<a hidden class="anchor" aria-hidden="true" href="#使用">#</a></h4>
+<p>Pod 直接使用的是 PVC，当 PVC 与 PV 绑定后，PV 会被保护起来而无法删除</p>
+<h4 id="回收策略">回收策略<a hidden class="anchor" aria-hidden="true" href="#回收策略">#</a></h4>
+<p>可以从 API 中将 PVC 对象删除， 从而允许该资源被回收再利用。PersistentVolume 对象的回收策略告诉集群， 当其被从申领中释放时如何处理该数据卷。</p>
+<p>有以下策略：</p>
+<ul>
+<li>保留：数据不会被删除，卷被视为已释放</li>
+<li>删除</li>
+<li>回收（已经弃用，用动态制备替代）</li>
+</ul>
+<h4 id="pv-状态">PV 状态<a hidden class="anchor" aria-hidden="true" href="#pv-状态">#</a></h4>
+<ul>
+<li>Available：空闲，未被绑定</li>
+<li>Bound：已经被 PVC 绑定</li>
+<li>Released：PVC 被删除，资源已回收，但是 PV 未被重新使用</li>
+<li>Failed：自动回收失败</li>
+</ul>
+<h4 id="storageclass">StorageClass<a hidden class="anchor" aria-hidden="true" href="#storageclass">#</a></h4>
+<p>存储类可以实现 PV 的动态构建，每一个 sc 都有一个  Provisioner 制备器用来决定使用哪个卷插件制备 PV，该字段必须指定。</p>
+<p>使用存储类就可以不再手动创建 PV。</p>
+<h2 id="认证与权限">认证与权限<a hidden class="anchor" aria-hidden="true" href="#认证与权限">#</a></h2>
+<p>所有对 k8s 的操作其实都是调 control-plane 上 api-server 的 RESTful 接口，调用这些接口都要经过认证和鉴权。</p>
+<h3 id="认证">认证<a hidden class="anchor" aria-hidden="true" href="#认证">#</a></h3>
+<p>k8s 集群中有两类用户：服务账户（Service Account）和普通账户（User Account）</p>
+<p><em>注意：在 Kubernetes 中不能通过 API 调用将普通用户添加到集群中</em>。</p>
+<ul>
+<li>普通帐户是针对（人）用户的，服务账户针对 Pod 进程。</li>
+<li>普通帐户是全局性。在集群所有 namespaces 中，名称具有惟一性。</li>
+<li>通常，群集的普通帐户可以与企业数据库同步，新的普通帐户创建需要特殊权限。服务账户创建目的是更轻量化，允许集群用户为特定任务创建服务账户。</li>
+<li>普通帐户和服务账户的审核注意事项不同。</li>
+<li>对于复杂系统的配置包，可以包括对该系统的各种组件的服务账户的定义。</li>
+</ul>
+<p>service account 由三个控制器来维护：</p>
+<ul>
+<li>
+<p>Service Account Admission Controller：是 api-server 的一部分</p>
+<ol>
+<li>
+<p>如果 pod 没有设置 ServiceAccount，则将 ServiceAccount 设置为 default。</p>
+</li>
+<li>
+<p>确保 pod 引用的 ServiceAccount 存在，否则将会拒绝请求。</p>
+</li>
+<li>
+<p>如果 pod 不包含任何 ImagePullSecrets，则将ServiceAccount 的 ImagePullSecrets 会添加到 pod 中。</p>
+</li>
+<li>
+<p>为包含 API 访问的 Token 的 pod 添加了一个 volume。</p>
+</li>
+<li>
+<p>把 volumeSource 添加到安装在 pod 的每个容器中，挂载在 /var/run/secrets/kubernetes.io/serviceaccount。</p>
+</li>
+</ol>
+</li>
+<li>
+<p>Token Controller：是 controller-manager 的一部分：</p>
+<ul>
+<li>观察 serviceAccount 的创建，并创建一个相应的 Secret 来允许 API 访问。</li>
+<li>观察 serviceAccount 的删除，并删除所有相应的ServiceAccountToken Secret</li>
+<li>观察 secret 添加，并确保关联的 ServiceAccount 存在，并在需要时向 secret 中添加一个 Token。</li>
+<li>观察 secret 删除，并在需要时对应 ServiceAccount 的关联</li>
+</ul>
+</li>
+<li>
+<p>Service Account Controller：在 namespaces 里管理ServiceAccount，并确保每个有效的 namespaces 中都存在一个名为 “default” 的 ServiceAccount。</p>
+</li>
+</ul>
+<h3 id="rbac">RBAC<a hidden class="anchor" aria-hidden="true" href="#rbac">#</a></h3>
+<p>k8s 中的权限控制是基于 RBAC 的。有两组作用域不同但机制相同的对象来控制权限</p>
+<p>集群作用域：</p>
+<ul>
+<li>ClusterRole：功能与 Role 一样，区别是资源类型为集群类型，而 Role 只在 Namespace</li>
+<li>ClusterRolebinding：作用于集群之上，可以绑定到该集群下的任意 User、Group 或 Service Account</li>
+</ul>
+<p>命名空间作用域：</p>
+<ul>
+<li>Role：代表一个角色，会包含一组权限，没有拒绝规则，只是附加允许。它是 Namespace 级别的资源，只能作用与 Namespace 之内。</li>
+<li>RoleBinding：作用于 Namespace 内，可以将 Role 或 ClusterRole 绑定到 User、Group、Service Account 上。</li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://cqqqq777.github.io/tags/k8s/">k8s</a></li>
+      <li><a href="https://cqqqq777.github.io/tags/golang/">golang</a></li>
+      <li><a href="https://cqqqq777.github.io/tags/cloud-native/">cloud native</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://cqqqq777.github.io/posts/hash/">
+    <span class="title">Next »</span>
+    <br>
+    <span>Hash</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>Copyright © 2023 Cqqqq777 Blog.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
